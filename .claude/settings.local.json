@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Read(//d//**)",
+      "Bash(npx create-next-app@latest sangue --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Bash(cp -r D:/sangue/. D:/Sangue/)",
+      "Bash(rm -rf D:/sangue)",
+      "Bash(npm install:*)",
+      "Bash(npx playwright:*)",
+      "Bash(npx tsc:*)",
+      "Bash(winget upgrade:*)",
+      "Bash(npx next *)",
+      "Bash(node *)",
+      "Bash(npx tsx *)",
+      "Bash(grep -v \"^$\")",
+      "WebFetch(domain:developers.cjdropshipping.com)",
+      "Bash(curl -s \"https://developers.cjdropshipping.com/en/api/api2/api/product.html\")",
+      "Bash(python3)",
+      "Bash(npm run *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/cj/sync -H 'Content-Type: application/json' -d '{\"categoryId\":\"1357251872037146624\",\"page\":1,\"limit\":10}')",
+      "Bash(curl -s http://localhost:3000/api/cj/categories)",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/cj/sync -H 'Content-Type: application/json' -d '{\"categoryId\":\"D2432903-0D4E-4787-886F-D3D9DA7890D9\",\"page\":1,\"limit\":5}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/cj/sync -H 'Content-Type: application/json' -d '{\"categoryId\":\"5A053E55-5D18-42EF-A4E7-B08AEA4D9B2F\",\"page\":1,\"limit\":5}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/cj/sync -H 'Content-Type: application/json' -d '{\"categoryId\":\"5A3E7341-18B5-4C61-BFCD-8965B3479A9A\",\"page\":1,\"limit\":5}')",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(curl *)",
+      "Bash(xargs grep *)",
+      "Bash(gh --version)",
+      "Bash(npx vercel *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
+    ]
+  }
+}
