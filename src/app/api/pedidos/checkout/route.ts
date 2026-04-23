@@ -24,6 +24,7 @@ interface CheckoutBody {
 export async function POST(req: NextRequest) {
   try {
     const body: CheckoutBody = await req.json()
+    console.log("[checkout] body recibido:", JSON.stringify(body))
     const { items, customer, shipping_address } = body
 
     if (!items?.length || !customer?.email || !shipping_address) {
@@ -106,8 +107,10 @@ export async function POST(req: NextRequest) {
       checkoutUrl: preference.init_point,
     })
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error)
-    console.error("[checkout] error:", msg, error)
-    return NextResponse.json({ error: "Error interno", detail: msg }, { status: 500 })
+    console.error("[checkout] error:", JSON.stringify(error, null, 2))
+    console.error("[checkout] message:", (error as { message?: string })?.message)
+    console.error("[checkout] cause:", (error as { cause?: unknown })?.cause)
+    console.error("[checkout] stack:", error instanceof Error ? error.stack : undefined)
+    return NextResponse.json({ error: "Error interno" }, { status: 500 })
   }
 }
