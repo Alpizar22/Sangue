@@ -4,11 +4,27 @@ import { getMercadoPagoClient } from "@/lib/mercadopago/client"
 import { Preference } from "mercadopago"
 import type { CartItem, ShippingAddress } from "@/types"
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.theia.lat"
+
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) throw new Error("Faltan variables de entorno de Supabase")
   return createClient(url, key, { auth: { persistSession: false } })
+}
+
+function serializeError(err: unknown): Record<string, unknown> {
+  if (err == null) return { raw: String(err) }
+  return {
+    name: (err as { name?: unknown }).name,
+    message: (err as { message?: unknown }).message,
+    status: (err as { status?: unknown }).status,
+    cause: (err as { cause?: unknown }).cause,
+    error: (err as { error?: unknown }).error,
+    stack: err instanceof Error ? err.stack : undefined,
+    keys: Object.keys(err as object),
+    json: (() => { try { return JSON.parse(JSON.stringify(err)) } catch { return "[circular]" } })(),
+  }
 }
 
 interface CheckoutBody {
@@ -24,7 +40,6 @@ interface CheckoutBody {
 export async function POST(req: NextRequest) {
   try {
     const body: CheckoutBody = await req.json()
-    console.log("[checkout] body recibido:", JSON.stringify(body))
     const { items, customer, shipping_address } = body
 
     if (!items?.length || !customer?.email || !shipping_address) {
@@ -41,7 +56,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     const subtotal = items.reduce((s, i) => s + i.product.sale_price * i.quantity, 0)
-    const shippingCost = 0 // Ajustar cuando tengamos lógica de envío
+    const shippingCost = 0
     const total = subtotal + shippingCost
 
     // Crear orden
@@ -68,34 +83,39 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (orderError || !order) {
-      console.error("[checkout] Error creando orden:", orderError)
+      console.error("[checkout] supabase order error:", orderError)
       return NextResponse.json({ error: "Error al crear orden" }, { status: 500 })
     }
 
-    // Crear preferencia MercadoPago
-    const mp = getMercadoPagoClient()
-    const preference = await new Preference(mp).create({
-      body: {
-        external_reference: order.id,
-        items: items.map((i) => ({
-          id: i.product_id,
-          title: i.product.title,
-          quantity: i.quantity,
-          unit_price: Number(i.product.sale_price),
-          currency_id: "MXN",
-        })),
-        payer: { email: customer.email, name: customer.name },
-        back_urls: {
-          success: `${process.env.NEXT_PUBLIC_SITE_URL}/pedidos/${order.id}?status=success`,
-          failure: `${process.env.NEXT_PUBLIC_SITE_URL}/checkout?status=failure`,
-          pending: `${process.env.NEXT_PUBLIC_SITE_URL}/pedidos/${order.id}?status=pending`,
-        },
-        auto_return: "approved",
-        notification_url: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/mercadopago`,
-      },
-    })
+    console.log("[checkout] orden creada:", order.id)
 
-    // Guardar preference_id
+    // Crear preferencia MercadoPago
+    const mpBody = {
+      external_reference: order.id,
+      items: items.map((i) => ({
+        id: i.product_id,
+        title: i.product.title.slice(0, 256),
+        quantity: i.quantity,
+        unit_price: Number(i.product.sale_price),
+        currency_id: "MXN",
+      })),
+      payer: { email: customer.email.toLowerCase().trim(), name: customer.name.trim() },
+      back_urls: {
+        success: `${SITE_URL}/pedidos/${order.id}?status=success`,
+        failure: `${SITE_URL}/checkout?status=failure`,
+        pending: `${SITE_URL}/pedidos/${order.id}?status=pending`,
+      },
+      auto_return: "approved" as const,
+      notification_url: `${SITE_URL}/api/webhooks/mercadopago`,
+    }
+
+    console.log("[checkout] MP preference body:", JSON.stringify(mpBody))
+
+    const mp = getMercadoPagoClient()
+    const preference = await new Preference(mp).create({ body: mpBody })
+
+    console.log("[checkout] preference creada:", preference.id, "url:", preference.init_point)
+
     await supabase
       .from("orders")
       .update({ mercadopago_preference_id: preference.id })
@@ -107,10 +127,7 @@ export async function POST(req: NextRequest) {
       checkoutUrl: preference.init_point,
     })
   } catch (error) {
-    console.error("[checkout] error:", JSON.stringify(error, null, 2))
-    console.error("[checkout] message:", (error as { message?: string })?.message)
-    console.error("[checkout] cause:", (error as { cause?: unknown })?.cause)
-    console.error("[checkout] stack:", error instanceof Error ? error.stack : undefined)
+    console.error("[checkout] CATCH:", JSON.stringify(serializeError(error), null, 2))
     return NextResponse.json({ error: "Error interno" }, { status: 500 })
   }
 }
