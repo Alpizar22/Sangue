@@ -80,8 +80,8 @@ export async function POST(req: NextRequest) {
           id: i.product_id,
           title: i.product.title,
           quantity: i.quantity,
-          unit_price: i.product.sale_price,
-          currency_id: "ARS",
+          unit_price: Number(i.product.sale_price),
+          currency_id: "MXN",
         })),
         payer: { email: customer.email, name: customer.name },
         back_urls: {
@@ -106,7 +106,8 @@ export async function POST(req: NextRequest) {
       checkoutUrl: preference.init_point,
     })
   } catch (error) {
-    console.error("[checkout]", error)
-    return NextResponse.json({ error: "Error interno" }, { status: 500 })
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error("[checkout] error:", msg, error)
+    return NextResponse.json({ error: "Error interno", detail: msg }, { status: 500 })
   }
 }

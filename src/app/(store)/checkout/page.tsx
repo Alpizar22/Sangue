@@ -37,7 +37,7 @@ export default function CheckoutPage() {
       city: form.city,
       province: form.province,
       postal_code: form.postal_code,
-      country: "AR",
+      country: "MX",
     }
 
     const res = await fetch("/api/pedidos/checkout", {
@@ -142,7 +142,7 @@ export default function CheckoutPage() {
             disabled={loading}
             className="w-full bg-black text-white py-3.5 rounded-xl font-semibold hover:bg-gray-800 disabled:opacity-50"
           >
-            {loading ? "Procesando..." : `Pagar $${total().toLocaleString("es-AR")} con MercadoPago`}
+            {loading ? "Procesando..." : `Pagar $${total().toLocaleString("es-MX")} con MercadoPago`}
           </button>
         </form>
 
@@ -159,12 +159,12 @@ export default function CheckoutPage() {
                 <p className="text-sm font-medium truncate">{item.product.title}</p>
                 <p className="text-xs text-gray-500">{item.size} · {item.color} · ×{item.quantity}</p>
               </div>
-              <p className="text-sm font-semibold">${(item.product.sale_price * item.quantity).toLocaleString("es-AR")}</p>
+              <p className="text-sm font-semibold">${(item.product.sale_price * item.quantity).toLocaleString("es-MX")}</p>
             </div>
           ))}
           <div className="border-t pt-3 flex justify-between font-bold">
             <span>Total</span>
-            <span>${total().toLocaleString("es-AR")}</span>
+            <span>${total().toLocaleString("es-MX")}</span>
           </div>
         </div>
       </div>

@@ -22,8 +22,9 @@ export default function ProductInteractive({ product }: Props) {
   const [activeIndex, setActiveIndex] = useState(0)
 
   function handleColorChange(_color: string, colorIndex: number) {
-    if (colorIndex >= 0 && colorIndex < (product.images?.length ?? 0)) {
-      setActiveIndex(colorIndex)
+    const imageCount = product.images?.length ?? 0
+    if (imageCount > 0 && colorIndex >= 0) {
+      setActiveIndex(colorIndex < imageCount ? colorIndex : 0)
     }
   }
 
