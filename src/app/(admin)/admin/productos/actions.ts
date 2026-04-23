@@ -75,6 +75,16 @@ export async function createProduct(
   return { error: null }
 }
 
+export async function deleteProduct(id: string): Promise<{ error: string | null }> {
+  const supabase = adminSupabase()
+  const { error } = await supabase.from("products").delete().eq("id", id)
+  if (error) {
+    console.error("[deleteProduct] error:", error)
+    return { error: error.message }
+  }
+  return { error: null }
+}
+
 export async function updateProduct(
   id: string,
   formData: FormData

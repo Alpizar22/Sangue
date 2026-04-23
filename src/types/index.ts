@@ -52,6 +52,7 @@ export interface ShippingAddress {
   number: string
   floor?: string
   apartment?: string
+  colonia?: string
   city: string
   province: string
   postal_code: string

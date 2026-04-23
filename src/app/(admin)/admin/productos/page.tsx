@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import type { Product } from "@/types"
+import DeleteProductButton from "@/components/admin/DeleteProductButton"
 
 export const metadata = { title: "Productos" }
 
@@ -77,12 +78,15 @@ export default async function AdminProductsPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/productos/${p.id}/editar`}
-                    className="text-blue-600 hover:underline text-xs"
-                  >
-                    Editar
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/admin/productos/${p.id}/editar`}
+                      className="text-blue-600 hover:underline text-xs"
+                    >
+                      Editar
+                    </Link>
+                    <DeleteProductButton id={p.id} title={p.title} />
+                  </div>
                 </td>
               </tr>
             ))}

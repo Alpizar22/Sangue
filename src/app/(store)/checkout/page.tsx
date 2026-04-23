@@ -1,18 +1,54 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useCartStore } from "@/store/cart"
 import { useRouter } from "next/navigation"
-import type { ShippingAddress } from "@/types"
+
+interface FormState {
+  first_name: string
+  last_name: string
+  email: string
+  phone: string
+  street: string
+  ext_number: string
+  int_number: string
+  colonia: string
+  postal_code: string
+  city: string
+  state: string
+}
+
+interface FormErrors {
+  [key: string]: string
+}
+
+interface CPData {
+  municipio: string
+  estado: string
+  ciudad: string
+  colonias: string[]
+}
+
+const FIELD_STYLE = "w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black transition-shadow"
+const ERROR_STYLE = "w-full border border-red-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-red-50 transition-shadow"
+
+function fieldClass(err?: string) {
+  return err ? ERROR_STYLE : FIELD_STYLE
+}
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCartStore()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({
-    email: "", name: "", phone: "",
-    street: "", number: "", floor: "", apartment: "",
-    city: "", province: "", postal_code: "",
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [cpLoading, setCpLoading] = useState(false)
+  const [colonias, setColonias] = useState<string[]>([])
+  const cpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const [form, setForm] = useState<FormState>({
+    first_name: "", last_name: "", email: "", phone: "",
+    street: "", ext_number: "", int_number: "",
+    colonia: "", postal_code: "", city: "", state: "",
   })
 
   useEffect(() => {
@@ -22,31 +58,91 @@ export default function CheckoutPage() {
   if (items.length === 0) return null
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    setForm(f => ({ ...f, [name]: value }))
+    if (errors[name]) setErrors(er => ({ ...er, [name]: "" }))
+
+    if (name === "postal_code") {
+      const v = value.replace(/\D/g, "").slice(0, 5)
+      setForm(f => ({ ...f, postal_code: v }))
+      if (cpTimer.current) clearTimeout(cpTimer.current)
+      if (v.length === 5) {
+        cpTimer.current = setTimeout(() => lookupCP(v), 400)
+      } else {
+        setColonias([])
+        setForm(f => ({ ...f, city: "", state: "", colonia: "" }))
+      }
+    }
+  }
+
+  async function lookupCP(cp: string) {
+    setCpLoading(true)
+    try {
+      const res = await fetch(`/api/cp?cp=${cp}`)
+      if (!res.ok) {
+        setErrors(er => ({ ...er, postal_code: "CP no encontrado" }))
+        return
+      }
+      const data: CPData = await res.json()
+      setForm(f => ({ ...f, city: data.ciudad || data.municipio, state: data.estado, colonia: "" }))
+      setColonias(data.colonias ?? [])
+      setErrors(er => ({ ...er, postal_code: "" }))
+    } catch {
+      // If CP lookup fails, let user type manually — not a hard error
+    } finally {
+      setCpLoading(false)
+    }
+  }
+
+  function validate(): FormErrors {
+    const e: FormErrors = {}
+    if (!form.first_name.trim()) e.first_name = "Requerido"
+    if (!form.last_name.trim()) e.last_name = "Requerido"
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      e.email = "Email inválido"
+    if (!/^\d{10}$/.test(form.phone.replace(/\D/g, "")))
+      e.phone = "Teléfono: 10 dígitos"
+    if (!form.street.trim()) e.street = "Requerido"
+    if (!form.ext_number.trim()) e.ext_number = "Requerido"
+    if (!form.colonia.trim()) e.colonia = "Requerido"
+    if (!/^\d{5}$/.test(form.postal_code)) e.postal_code = "5 dígitos"
+    if (!form.city.trim()) e.city = "Requerido"
+    if (!form.state.trim()) e.state = "Requerido"
+    return e
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
-
-    const shippingAddress: ShippingAddress = {
-      street: form.street,
-      number: form.number,
-      floor: form.floor || undefined,
-      apartment: form.apartment || undefined,
-      city: form.city,
-      province: form.province,
-      postal_code: form.postal_code,
-      country: "MX",
+    const errs = validate()
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
+      const firstEl = document.querySelector<HTMLElement>("[data-error='true']")
+      firstEl?.scrollIntoView({ behavior: "smooth", block: "center" })
+      return
     }
+
+    setLoading(true)
 
     const res = await fetch("/api/pedidos/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         items,
-        customer: { email: form.email, name: form.name, phone: form.phone },
-        shipping_address: shippingAddress,
+        customer: {
+          email: form.email.toLowerCase().trim(),
+          name: `${form.first_name.trim()} ${form.last_name.trim()}`,
+          phone: form.phone.replace(/\D/g, ""),
+        },
+        shipping_address: {
+          street: form.street.trim(),
+          number: form.ext_number.trim(),
+          floor: form.int_number || undefined,
+          colonia: form.colonia.trim(),
+          city: form.city.trim(),
+          province: form.state.trim(),
+          postal_code: form.postal_code,
+          country: "MX",
+        },
       }),
     })
 
@@ -61,110 +157,282 @@ export default function CheckoutPage() {
     }
   }
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-8">Checkout</h1>
+  const inputClass = (name: keyof FormState) => fieldClass(errors[name])
 
-      <div className="grid md:grid-cols-2 gap-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <section>
-            <h2 className="font-semibold mb-3">Datos de contacto</h2>
-            <div className="space-y-3">
-              {[
-                { name: "name", label: "Nombre completo", type: "text" },
-                { name: "email", label: "Email", type: "email" },
-                { name: "phone", label: "Teléfono", type: "tel" },
-              ].map(({ name, label, type }) => (
-                <div key={name}>
-                  <label className="block text-sm font-medium mb-1">{label}</label>
+  function Field({
+    name, label, type = "text", required = true, placeholder = "", half = false,
+  }: {
+    name: keyof FormState
+    label: string
+    type?: string
+    required?: boolean
+    placeholder?: string
+    half?: boolean
+  }) {
+    return (
+      <div className={half ? "" : "w-full"}>
+        <label className="block text-xs font-medium text-gray-600 mb-1">
+          {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+        </label>
+        <input
+          name={name}
+          type={type}
+          value={form[name]}
+          onChange={handleChange}
+          placeholder={placeholder}
+          data-error={!!errors[name] || undefined}
+          className={inputClass(name)}
+        />
+        {errors[name] && (
+          <p className="text-xs text-red-500 mt-0.5">{errors[name]}</p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ background: "var(--bg)", minHeight: "60vh" }}>
+      <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
+        <h1
+          className="text-2xl md:text-3xl italic mb-8"
+          style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+        >
+          Finalizar compra
+        </h1>
+
+        <div className="grid md:grid-cols-[1fr_380px] gap-8 items-start">
+          {/* ── FORM ─────────────────────────────────────── */}
+          <form onSubmit={handleSubmit} noValidate className="space-y-7">
+
+            {/* Datos de contacto */}
+            <section
+              className="rounded-xl p-5 space-y-4"
+              style={{ background: "var(--paper)", border: "1px solid rgba(26,26,26,0.08)" }}
+            >
+              <h2
+                className="text-[10px] uppercase tracking-[0.2em]"
+                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+              >
+                Datos de contacto
+              </h2>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field name="first_name" label="Nombre" placeholder="María" />
+                <Field name="last_name" label="Apellido" placeholder="García" />
+              </div>
+              <Field name="email" label="Email" type="email" placeholder="maria@correo.com" />
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Teléfono<span className="text-red-500 ml-0.5">*</span>
+                </label>
+                <input
+                  name="phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 10)
+                    setForm(f => ({ ...f, phone: v }))
+                    if (errors.phone) setErrors(er => ({ ...er, phone: "" }))
+                  }}
+                  placeholder="10 dígitos"
+                  maxLength={10}
+                  className={inputClass("phone")}
+                />
+                {errors.phone && <p className="text-xs text-red-500 mt-0.5">{errors.phone}</p>}
+              </div>
+            </section>
+
+            {/* Dirección de envío */}
+            <section
+              className="rounded-xl p-5 space-y-4"
+              style={{ background: "var(--paper)", border: "1px solid rgba(26,26,26,0.08)" }}
+            >
+              <h2
+                className="text-[10px] uppercase tracking-[0.2em]"
+                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+              >
+                Dirección de envío
+              </h2>
+
+              {/* CP con autocomplete */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Código Postal<span className="text-red-500 ml-0.5">*</span>
+                </label>
+                <div className="relative">
                   <input
-                    name={name}
-                    type={type}
-                    required={name !== "phone"}
-                    value={form[name as keyof typeof form]}
+                    name="postal_code"
+                    type="text"
+                    inputMode="numeric"
+                    value={form.postal_code}
                     onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    placeholder="12345"
+                    maxLength={5}
+                    className={inputClass("postal_code")}
                   />
+                  {cpLoading && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                      Buscando…
+                    </span>
+                  )}
+                </div>
+                {errors.postal_code && <p className="text-xs text-red-500 mt-0.5">{errors.postal_code}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Ciudad<span className="text-red-500 ml-0.5">*</span>
+                  </label>
+                  <input
+                    name="city"
+                    value={form.city}
+                    onChange={handleChange}
+                    placeholder="Auto-completado"
+                    className={inputClass("city")}
+                  />
+                  {errors.city && <p className="text-xs text-red-500 mt-0.5">{errors.city}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Estado<span className="text-red-500 ml-0.5">*</span>
+                  </label>
+                  <input
+                    name="state"
+                    value={form.state}
+                    onChange={handleChange}
+                    placeholder="Auto-completado"
+                    className={inputClass("state")}
+                  />
+                  {errors.state && <p className="text-xs text-red-500 mt-0.5">{errors.state}</p>}
+                </div>
+              </div>
+
+              {/* Colonia */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Colonia<span className="text-red-500 ml-0.5">*</span>
+                </label>
+                {colonias.length > 0 ? (
+                  <select
+                    name="colonia"
+                    value={form.colonia}
+                    onChange={handleChange}
+                    className={inputClass("colonia")}
+                  >
+                    <option value="">— Selecciona colonia —</option>
+                    {colonias.map(c => <option key={c} value={c}>{c}</option>)}
+                    <option value="__otra__">Otra (escribir manualmente)</option>
+                  </select>
+                ) : (
+                  <input
+                    name="colonia"
+                    value={form.colonia}
+                    onChange={handleChange}
+                    placeholder="Nombre de tu colonia"
+                    className={inputClass("colonia")}
+                  />
+                )}
+                {form.colonia === "__otra__" && (
+                  <input
+                    name="colonia"
+                    value=""
+                    onChange={handleChange}
+                    placeholder="Escribe tu colonia"
+                    className={`${FIELD_STYLE} mt-2`}
+                    autoFocus
+                  />
+                )}
+                {errors.colonia && <p className="text-xs text-red-500 mt-0.5">{errors.colonia}</p>}
+              </div>
+
+              <Field name="street" label="Calle" placeholder="Av. Juárez" />
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field name="ext_number" label="Número exterior" placeholder="123" />
+                <Field name="int_number" label="Número interior" placeholder="Depto. 4B" required={false} />
+              </div>
+            </section>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 text-[11px] uppercase tracking-[0.2em] transition-all duration-300 disabled:opacity-50"
+              style={{
+                fontFamily: "var(--font-space-mono)",
+                background: "var(--ink)",
+                color: "var(--bg)",
+              }}
+            >
+              {loading ? "Procesando…" : `Pagar $${total().toLocaleString("es-MX")} MXN con MercadoPago`}
+            </button>
+          </form>
+
+          {/* ── RESUMEN ──────────────────────────────────── */}
+          <div
+            className="rounded-xl p-5 space-y-4 sticky top-4"
+            style={{ background: "var(--paper)", border: "1px solid rgba(26,26,26,0.08)" }}
+          >
+            <h2
+              className="text-[10px] uppercase tracking-[0.2em]"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+            >
+              Tu pedido
+            </h2>
+            <div className="space-y-3">
+              {items.map((item) => (
+                <div key={`${item.product_id}-${item.size}-${item.color}`} className="flex gap-3">
+                  {item.product.images?.[0] && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.product.images[0]}
+                      alt={item.product.title}
+                      className="w-14 h-14 object-cover rounded-lg flex-shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-xs font-medium leading-snug line-clamp-2"
+                      style={{ color: "var(--ink)" }}
+                    >
+                      {item.product.title}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--ink)", opacity: 0.5 }}>
+                      {[item.size, item.color].filter(Boolean).join(" · ")} · ×{item.quantity}
+                    </p>
+                  </div>
+                  <p
+                    className="text-sm font-semibold whitespace-nowrap"
+                    style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+                  >
+                    ${(item.product.sale_price * item.quantity).toLocaleString("es-MX")}
+                  </p>
                 </div>
               ))}
             </div>
-          </section>
-
-          <section>
-            <h2 className="font-semibold mb-3">Dirección de envío</h2>
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Calle</label>
-                  <input name="street" required value={form.street} onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Número</label>
-                  <input name="number" required value={form.number} onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Piso</label>
-                  <input name="floor" value={form.floor} onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Departamento</label>
-                  <input name="apartment" value={form.apartment} onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Ciudad</label>
-                  <input name="city" required value={form.city} onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Código Postal</label>
-                  <input name="postal_code" required value={form.postal_code} onChange={handleChange}
-                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Provincia</label>
-                <input name="province" required value={form.province} onChange={handleChange}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
-              </div>
+            <div
+              className="pt-3 flex justify-between items-center"
+              style={{ borderTop: "1px solid rgba(26,26,26,0.1)" }}
+            >
+              <span
+                className="text-[10px] uppercase tracking-[0.2em]"
+                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+              >
+                Total
+              </span>
+              <span
+                className="text-lg font-semibold"
+                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+              >
+                ${total().toLocaleString("es-MX")}
+              </span>
             </div>
-          </section>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-black text-white py-3.5 rounded-xl font-semibold hover:bg-gray-800 disabled:opacity-50"
-          >
-            {loading ? "Procesando..." : `Pagar $${total().toLocaleString("es-MX")} con MercadoPago`}
-          </button>
-        </form>
-
-        <div className="space-y-3">
-          <h2 className="font-semibold mb-3">Tu pedido</h2>
-          {items.map((item) => (
-            <div key={`${item.product_id}-${item.size}-${item.color}`} className="flex gap-3">
-              {item.product.images?.[0] && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.product.images[0]} alt={item.product.title}
-                  className="w-14 h-14 object-cover rounded-lg flex-shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.product.title}</p>
-                <p className="text-xs text-gray-500">{item.size} · {item.color} · ×{item.quantity}</p>
-              </div>
-              <p className="text-sm font-semibold">${(item.product.sale_price * item.quantity).toLocaleString("es-MX")}</p>
-            </div>
-          ))}
-          <div className="border-t pt-3 flex justify-between font-bold">
-            <span>Total</span>
-            <span>${total().toLocaleString("es-MX")}</span>
+            <p
+              className="text-[10px] text-center"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+            >
+              Pago seguro con MercadoPago · Envío 7–15 días hábiles
+            </p>
           </div>
         </div>
       </div>

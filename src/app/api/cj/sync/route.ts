@@ -10,14 +10,17 @@ function adminSupabase() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
-const MARKUP = 2.5
 const USD_TO_MXN = 17.5
+const SHIPPING_MXN = 120   // costo fijo estimado de envío CJ → México
+const MARGIN = 1.30        // 30% de margen mínimo sobre costo real
 const MAX_PRICE = 999999.99
 
 function mapCJProductToRow(p: CJProduct, category: string) {
   const rawCostUSD = parseFloat(p.sellPrice) || 0
-  const costPrice = Math.min(rawCostUSD * USD_TO_MXN, MAX_PRICE)
-  const salePrice = Math.min(Math.ceil((costPrice * MARKUP) / 100) * 100, MAX_PRICE)
+  // Costo real = precio CJ en MXN + envío estimado
+  const costPrice = Math.min(rawCostUSD * USD_TO_MXN + SHIPPING_MXN, MAX_PRICE)
+  // Precio venta = costo real × 1.30, redondeado al 100 MXN superior
+  const salePrice = Math.min(Math.ceil((costPrice * MARGIN) / 100) * 100, MAX_PRICE)
   const stock = p.warehouseInventoryNum ?? 99
 
   return {
