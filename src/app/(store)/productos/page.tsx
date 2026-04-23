@@ -1,15 +1,20 @@
+import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import type { Metadata } from "next"
 import type { Product } from "@/types"
-import ProductCard from "@/components/store/ProductCard"
+import FilterPanel from "@/components/store/FilterPanel"
+import ProductGrid from "@/components/store/ProductGrid"
 
 export const revalidate = 60
 
-export async function generateMetadata({
-  searchParams,
-}: {
-  searchParams: Promise<{ categoria?: string; q?: string }>
-}): Promise<Metadata> {
+type SearchParams = Promise<{
+  categoria?: string
+  q?: string
+  talla?: string
+  orden?: string
+}>
+
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   const { categoria, q } = await searchParams
   const title = q
     ? `Búsqueda: "${q}"`
@@ -22,61 +27,69 @@ export async function generateMetadata({
   }
 }
 
-export default async function ProductsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ categoria?: string; q?: string }>
-}) {
-  const { categoria, q } = await searchParams
+export default async function ProductsPage({ searchParams }: { searchParams: SearchParams }) {
+  const { categoria, q, talla, orden } = await searchParams
   const supabase = await createClient()
 
-  let query = supabase
-    .from("products")
-    .select("*")
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
+  let query = supabase.from("products").select("*").eq("status", "active")
 
   if (categoria) query = query.eq("category", categoria)
   if (q) query = query.ilike("title", `%${q}%`)
+  if (talla) query = query.contains("sizes", [talla])
+
+  switch (orden) {
+    case "precio_asc":
+      query = query.order("sale_price", { ascending: true })
+      break
+    case "precio_desc":
+      query = query.order("sale_price", { ascending: false })
+      break
+    default:
+      query = query.order("created_at", { ascending: false })
+  }
 
   const { data: products } = await query
 
-  const heading = q ? `"${q}"` : categoria ?? "Todos los productos"
+  const count = (products ?? []).length
+  const heading = q ? `"${q}"` : categoria ?? "Colección"
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1
-        className="text-3xl italic mb-1"
-        style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
-      >
-        {heading}
-      </h1>
-      {(categoria || q) && (
-        <p
-          className="text-[10px] uppercase tracking-[0.25em] mb-8"
-          style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
-        >
-          {q ? "búsqueda" : "categoría"} · {(products ?? []).length} productos
-        </p>
-      )}
-      {!categoria && !q && (
-        <div className="mb-8" />
-      )}
+    <div style={{ background: "var(--bg)", minHeight: "60vh" }}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
 
-      {products && products.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map((product: Product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+        {/* Encabezado de sección */}
+        <div className="flex items-baseline justify-between mb-8">
+          <div>
+            <h1
+              className="text-3xl italic"
+              style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+            >
+              {heading}
+            </h1>
+            <p
+              className="text-[10px] uppercase tracking-[0.2em] mt-1"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+            >
+              {count} {count === 1 ? "producto" : "productos"}
+            </p>
+          </div>
         </div>
-      ) : (
-        <p
-          className="text-center py-16 text-sm"
-          style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
-        >
-          No hay productos disponibles
-        </p>
-      )}
+
+        {/* Layout: sidebar + grid */}
+        <div className="flex gap-10 items-start">
+
+          {/* FilterPanel necesita Suspense por useSearchParams */}
+          <Suspense fallback={<div className="hidden lg:block w-44 flex-shrink-0" />}>
+            <FilterPanel />
+          </Suspense>
+
+          {/* Grid de productos */}
+          <div className="flex-1 min-w-0">
+            <ProductGrid products={(products ?? []) as Product[]} />
+          </div>
+
+        </div>
+      </div>
     </div>
   )
 }

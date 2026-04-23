@@ -2,7 +2,13 @@ import Link from "next/link"
 import Image from "next/image"
 import type { Product } from "@/types"
 
+const NEW_THRESHOLD_DAYS = 14
+
 export default function ProductCard({ product }: { product: Product }) {
+  const isNew = product.created_at
+    ? Date.now() - new Date(product.created_at).getTime() < NEW_THRESHOLD_DAYS * 86400_000
+    : false
+
   return (
     <Link href={`/productos/${product.id}`} className="group block">
       <div
@@ -25,7 +31,22 @@ export default function ProductCard({ product }: { product: Product }) {
             Sin imagen
           </div>
         )}
+
+        {/* Badge NUEVO */}
+        {isNew && (
+          <span
+            className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[8px] uppercase tracking-[0.2em]"
+            style={{
+              fontFamily: "var(--font-space-mono)",
+              background: "var(--ink)",
+              color: "var(--bg)",
+            }}
+          >
+            Nuevo
+          </span>
+        )}
       </div>
+
       <div className="pt-2 pb-3 px-0.5">
         {product.category && (
           <p

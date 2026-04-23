@@ -38,6 +38,7 @@ function mapCJProductToRow(p: CJProduct, category: string) {
     sizes: [] as string[],
     colors: [] as string[],
     shein_sku: null as null,
+    subcategory: p.threeCategoryName ?? null,
     stock,
     status: "active" as const,
   }

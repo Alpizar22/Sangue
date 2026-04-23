@@ -3,14 +3,15 @@ import Image from "next/image"
 import { createAdminClient } from "@/lib/supabase/server"
 import Header from "@/components/store/Header"
 import Footer from "@/components/store/Footer"
+import ProductCard from "@/components/store/ProductCard"
+import type { Product } from "@/types"
 
 export const revalidate = 120
 
 export default async function HomePage() {
   const supabase = await createAdminClient()
 
-  // Una imagen representativa por sección para las cards
-  const [{ data: dressRow }, { data: jerseyRow }] = await Promise.all([
+  const [{ data: dressRow }, { data: jerseyRow }, { data: newProducts }] = await Promise.all([
     supabase
       .from("products")
       .select("images")
@@ -29,6 +30,12 @@ export default async function HomePage() {
       .order("created_at", { ascending: false })
       .limit(1)
       .single(),
+    supabase
+      .from("products")
+      .select("*")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(6),
   ])
 
   const dressImage = dressRow?.images?.[0] ?? null
@@ -66,29 +73,23 @@ export default async function HomePage() {
           <Link
             href="/productos?categoria=Lady+Dresses"
             className="inline-block px-8 py-3 text-xs uppercase tracking-[0.2em] transition-all hover:opacity-80"
-            style={{
-              fontFamily: "var(--font-space-mono)",
-              background: "var(--ink)",
-              color: "var(--bg)",
-            }}
+            style={{ fontFamily: "var(--font-space-mono)", background: "var(--ink)", color: "var(--bg)" }}
           >
             Ver colección
           </Link>
         </section>
 
-        {/* ── DIVISOR ──────────────────────────────────────────────────── */}
         <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
 
         {/* ── CARDS DE CATEGORÍA ───────────────────────────────────────── */}
         <section className="grid grid-cols-1 md:grid-cols-2">
 
-          {/* Card: Colección Mujer */}
+          {/* Colección Mujer */}
           <Link
             href="/productos?categoria=Lady+Dresses"
             className="group relative overflow-hidden flex flex-col justify-end"
             style={{ minHeight: "480px" }}
           >
-            {/* Imagen de fondo */}
             {dressImage ? (
               <Image
                 src={dressImage}
@@ -100,12 +101,10 @@ export default async function HomePage() {
             ) : (
               <div className="absolute inset-0" style={{ background: "var(--paper)" }} />
             )}
-            {/* Overlay gradiente */}
             <div
               className="absolute inset-0"
               style={{ background: "linear-gradient(to top, rgba(26,26,26,0.7) 0%, transparent 60%)" }}
             />
-            {/* Texto */}
             <div className="relative z-10 p-8">
               <p
                 className="text-sm mb-1"
@@ -128,16 +127,14 @@ export default async function HomePage() {
             </div>
           </Link>
 
-          {/* Divisor vertical en móvil */}
           <div className="md:hidden" style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
 
-          {/* Card: Jerseys de Fútbol */}
+          {/* Jerseys */}
           <Link
             href="/productos?categoria=Jerseys"
             className="group relative overflow-hidden flex flex-col justify-end"
             style={{ minHeight: "480px", background: "var(--night)" }}
           >
-            {/* Imagen de fondo */}
             {jerseyImage && (
               <Image
                 src={jerseyImage}
@@ -147,12 +144,10 @@ export default async function HomePage() {
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
             )}
-            {/* Overlay */}
             <div
               className="absolute inset-0"
               style={{ background: "linear-gradient(to top, rgba(26,31,46,0.85) 0%, rgba(26,31,46,0.3) 60%)" }}
             />
-            {/* Texto */}
             <div className="relative z-10 p-8">
               <p
                 className="text-sm mb-1"
@@ -176,6 +171,36 @@ export default async function HomePage() {
           </Link>
 
         </section>
+
+        {/* ── NUEVOS INGRESOS ──────────────────────────────────────────── */}
+        {newProducts && newProducts.length > 0 && (
+          <section
+            style={{ borderTop: "1px solid rgba(26,26,26,0.08)", background: "var(--bg)" }}
+          >
+            <div className="max-w-7xl mx-auto px-4 py-12 md:py-16">
+              <div className="flex items-baseline justify-between mb-8">
+                <h2
+                  className="text-2xl italic"
+                  style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+                >
+                  Nuevos ingresos
+                </h2>
+                <Link
+                  href="/productos?orden=nuevos"
+                  className="text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-100"
+                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+                >
+                  Ver todos →
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {(newProducts as Product[]).map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── TAGLINE ──────────────────────────────────────────────────── */}
         <div
