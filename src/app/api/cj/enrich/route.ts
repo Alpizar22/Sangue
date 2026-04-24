@@ -140,6 +140,8 @@ export async function GET(req: NextRequest) {
             // colorImageMap preserves insertion order (first variant per color wins)
             const colorImageMap = new Map<string, string>()
             const sizesSet = new Set<string>()
+            // color_sizes: which sizes are available per color
+            const colorSizesMap = new Map<string, string[]>()
             // sizeStock: aggregate stock across all colors per size
             const sizeStockMap = new Map<string, number>()
             const hasVariantStock = variantList.some((v) => v.variantStock != null)
@@ -153,14 +155,22 @@ export async function GET(req: NextRequest) {
                   sizeStockMap.set(size, (sizeStockMap.get(size) ?? 0) + v.variantStock)
                 }
               }
-              if (color && !colorImageMap.has(color)) {
-                colorImageMap.set(color, v.variantImage || d.bigImage || "")
+              if (color) {
+                if (!colorImageMap.has(color)) {
+                  colorImageMap.set(color, v.variantImage || d.bigImage || "")
+                }
+                if (size) {
+                  const existing = colorSizesMap.get(color) ?? []
+                  if (!existing.includes(size)) existing.push(size)
+                  colorSizesMap.set(color, existing)
+                }
               }
             }
 
             const colors = [...colorImageMap.keys()]
             const colorImages = [...colorImageMap.values()].filter(Boolean)
             const sizes = [...sizesSet]
+            const color_sizes = colorSizesMap.size > 0 ? Object.fromEntries(colorSizesMap) : null
             const size_stock = hasVariantStock && sizeStockMap.size > 0
               ? Object.fromEntries(sizeStockMap)
               : null
@@ -179,6 +189,7 @@ export async function GET(req: NextRequest) {
 
             // ── Persist ────────────────────────────────────────────────────
             const updatePayload: Record<string, unknown> = { images, sizes, colors }
+            if (color_sizes !== null) updatePayload.color_sizes = color_sizes
             if (size_stock !== null) updatePayload.size_stock = size_stock
 
             const { error: updateErr } = await supabase

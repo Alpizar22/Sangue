@@ -31,6 +31,7 @@ export interface Product {
   subcategory?: string | null
   seccion?: string | null
   size_stock?: Record<string, number> | null
+  color_sizes?: Record<string, string[]> | null
 }
 
 export interface CartItem {

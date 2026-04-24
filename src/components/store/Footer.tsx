@@ -80,11 +80,11 @@ export default function Footer() {
             style={{ fontFamily: "var(--font-space-mono)" }}
           >
             {[
-              { href: "/pedidos", label: "Seguimiento de pedido" },
-              { href: "/envios", label: "Política de envíos" },
-              { href: "/devoluciones", label: "Devoluciones y cambios" },
-              { href: "/faq", label: "Preguntas frecuentes" },
-              { href: "/productos", label: "Ver toda la colección" },
+              { href: "/ayuda/seguimiento", label: "Seguimiento de pedido" },
+              { href: "/ayuda/envios", label: "Política de envíos" },
+              { href: "/ayuda/devoluciones", label: "Devoluciones y cambios" },
+              { href: "/ayuda/preguntas-frecuentes", label: "Preguntas frecuentes" },
+              { href: "/coleccion", label: "Ver toda la colección" },
             ].map(({ href, label }) => (
               <Link
                 key={href}

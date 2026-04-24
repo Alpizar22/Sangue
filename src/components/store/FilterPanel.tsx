@@ -21,6 +21,10 @@ const SORT_OPTIONS = [
   { value: "precio_desc", label: "Precio: mayor → menor" },
 ]
 
+function filterCount(cat: string, talla: string, orden: string): number {
+  return [cat, talla, orden !== "nuevos" ? orden : ""].filter(Boolean).length
+}
+
 function FilterContent({
   onClose,
   categories,
@@ -37,6 +41,7 @@ function FilterContent({
   const currentCat = searchParams.get("categoria") ?? ""
   const currentTalla = searchParams.get("talla") ?? ""
   const currentOrden = searchParams.get("orden") ?? "nuevos"
+  const hasFilters = !!(currentCat || currentTalla || (currentOrden && currentOrden !== "nuevos"))
 
   const updateParam = useCallback(
     (key: string, value: string) => {
@@ -54,8 +59,6 @@ function FilterContent({
     onClose?.()
   }
 
-  const hasFilters = !!(currentCat || currentTalla || (currentOrden && currentOrden !== "nuevos"))
-
   return (
     <div className="space-y-7">
 
@@ -67,22 +70,23 @@ function FilterContent({
         >
           Categoría
         </p>
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {categories.map(({ value, label }) => {
             const active = currentCat === value
             return (
               <button
                 key={value}
                 onClick={() => updateParam("categoria", value)}
-                className="block w-full text-left text-[11px] py-0.5 transition-opacity hover:opacity-100"
+                className="block w-full text-left text-[11px] px-2.5 py-1.5 transition-all duration-150"
                 style={{
                   fontFamily: "var(--font-space-mono)",
-                  color: "var(--ink)",
-                  opacity: active ? 1 : 0.45,
-                  fontWeight: active ? "600" : "400",
+                  border: `1px solid ${active ? "var(--ink)" : "transparent"}`,
+                  background: active ? "var(--ink)" : "transparent",
+                  color: active ? "var(--bg)" : "var(--ink)",
+                  opacity: active ? 1 : 0.5,
+                  borderRadius: "2px",
                 }}
               >
-                {active && <span className="mr-1.5 text-[9px]">—</span>}
                 {label}
               </button>
             )
@@ -90,7 +94,6 @@ function FilterContent({
         </div>
       </div>
 
-      {/* Divisor */}
       <div style={{ height: "1px", background: "rgba(26,26,26,0.08)" }} />
 
       {/* Talla */}
@@ -108,13 +111,15 @@ function FilterContent({
               <button
                 key={size}
                 onClick={() => updateParam("talla", selected ? "" : size)}
-                className="px-2.5 py-1 text-[10px] uppercase transition-all"
+                className="px-2.5 py-1 text-[10px] uppercase transition-all duration-150"
                 style={{
                   fontFamily: "var(--font-space-mono)",
                   border: `1px solid ${selected ? "var(--ink)" : "rgba(26,26,26,0.18)"}`,
                   background: selected ? "var(--ink)" : "transparent",
                   color: selected ? "var(--bg)" : "var(--ink)",
-                  opacity: selected ? 1 : 0.7,
+                  opacity: selected ? 1 : 0.6,
+                  borderRadius: "2px",
+                  transform: selected ? "scale(1.03)" : "scale(1)",
                 }}
               >
                 {size}
@@ -124,7 +129,6 @@ function FilterContent({
         </div>
       </div>
 
-      {/* Divisor */}
       <div style={{ height: "1px", background: "rgba(26,26,26,0.08)" }} />
 
       {/* Ordenar */}
@@ -135,22 +139,23 @@ function FilterContent({
         >
           Ordenar
         </p>
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {SORT_OPTIONS.map(({ value, label }) => {
             const active = currentOrden === value
             return (
               <button
                 key={value}
                 onClick={() => updateParam("orden", value)}
-                className="block text-[11px] transition-opacity hover:opacity-100"
+                className="block w-full text-left text-[11px] px-2.5 py-1.5 transition-all duration-150"
                 style={{
                   fontFamily: "var(--font-space-mono)",
-                  color: "var(--ink)",
-                  opacity: active ? 1 : 0.45,
-                  fontWeight: active ? "600" : "400",
+                  border: `1px solid ${active ? "var(--ink)" : "transparent"}`,
+                  background: active ? "var(--ink)" : "transparent",
+                  color: active ? "var(--bg)" : "var(--ink)",
+                  opacity: active ? 1 : 0.5,
+                  borderRadius: "2px",
                 }}
               >
-                {active && <span className="mr-1.5 text-[9px]">—</span>}
                 {label}
               </button>
             )
@@ -163,8 +168,14 @@ function FilterContent({
           <div style={{ height: "1px", background: "rgba(26,26,26,0.08)" }} />
           <button
             onClick={clearAll}
-            className="text-[10px] uppercase tracking-[0.15em] underline underline-offset-2 transition-opacity hover:opacity-80"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+            className="text-[10px] uppercase tracking-[0.15em] transition-all duration-150 hover:opacity-80"
+            style={{
+              fontFamily: "var(--font-space-mono)",
+              color: "var(--ink)",
+              opacity: 0.45,
+              textDecoration: "underline",
+              textUnderlineOffset: "3px",
+            }}
           >
             Limpiar filtros
           </button>
@@ -183,14 +194,14 @@ export default function FilterPanel({
 } = {}) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
 
   const currentCat = searchParams.get("categoria") ?? ""
   const currentTalla = searchParams.get("talla") ?? ""
   const currentOrden = searchParams.get("orden") ?? "nuevos"
-  const hasFilters = !!(currentCat || currentTalla || (currentOrden && currentOrden !== "nuevos"))
-
-  const router = useRouter()
-  const pathname = usePathname()
+  const activeCount = filterCount(currentCat, currentTalla, currentOrden)
+  const hasFilters = activeCount > 0
 
   return (
     <>
@@ -199,24 +210,31 @@ export default function FilterPanel({
         <FilterContent categories={categories} sizes={sizes} />
       </aside>
 
-      {/* ── Mobile top bar — w-full so it never shrinks as a flex-item ── */}
+      {/* ── Mobile top bar ─────────────────────────────── */}
       <div className="lg:hidden w-full flex items-center justify-between mb-5">
         <button
           onClick={() => setDrawerOpen(true)}
-          className="flex items-center gap-2 text-[10px] uppercase tracking-[0.15em] px-4 py-2 transition-colors"
+          className="flex items-center gap-2 text-[10px] uppercase tracking-[0.15em] px-4 py-2 transition-all duration-150"
           style={{
             fontFamily: "var(--font-space-mono)",
-            color: "var(--ink)",
-            border: "1px solid rgba(26,26,26,0.2)",
+            color: hasFilters ? "var(--bg)" : "var(--ink)",
+            background: hasFilters ? "var(--ink)" : "transparent",
+            border: `1px solid ${hasFilters ? "var(--ink)" : "rgba(26,26,26,0.2)"}`,
           }}
         >
-          {hasFilters && (
-            <span
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: "var(--ink)" }}
-            />
-          )}
           Filtros
+          {activeCount > 0 && (
+            <span
+              className="w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center flex-shrink-0"
+              style={{
+                background: "var(--bg)",
+                color: "var(--ink)",
+                fontFamily: "var(--font-space-mono)",
+              }}
+            >
+              {activeCount}
+            </span>
+          )}
         </button>
 
         <select
@@ -256,6 +274,14 @@ export default function FilterPanel({
                 style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
               >
                 Filtros
+                {activeCount > 0 && (
+                  <span
+                    className="ml-2 inline-flex w-4 h-4 rounded-full text-[9px] items-center justify-center"
+                    style={{ background: "var(--ink)", color: "var(--bg)", fontFamily: "var(--font-space-mono)" }}
+                  >
+                    {activeCount}
+                  </span>
+                )}
               </p>
               <button
                 onClick={() => setDrawerOpen(false)}

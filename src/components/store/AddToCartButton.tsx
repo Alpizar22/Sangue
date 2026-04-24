@@ -41,30 +41,40 @@ interface Props {
 }
 
 export default function AddToCartButton({ product, onColorChange }: Props) {
-  const sizes = product.sizes ?? []
   const colors = product.colors ?? []
+  const allSizes = product.sizes ?? []
 
-  // Diagnostic log — remove once confirmed working
-  console.log("[AddToCartButton] sizes:", sizes, "colors:", colors, "id:", product.id)
-
-  const [selectedSize, setSelectedSize] = useState<string>(
-    sizes.length === 1 ? sizes[0] : ""
-  )
   const [selectedColor, setSelectedColor] = useState<string>(
     colors.length === 1 ? colors[0] : ""
   )
+  const [selectedSize, setSelectedSize] = useState<string>(() => {
+    const initColor = colors.length === 1 ? colors[0] : ""
+    const initSizes = product.color_sizes?.[initColor] ?? allSizes
+    return initSizes.length === 1 ? initSizes[0] : ""
+  })
   const [added, setAdded] = useState(false)
   const [sizeError, setSizeError] = useState(false)
   const addItem = useCartStore((s) => s.addItem)
 
-  const hasSizes = sizes.length > 0
+  // Sizes visible for currently selected color
+  const availableSizes: string[] = selectedColor && product.color_sizes?.[selectedColor]
+    ? product.color_sizes[selectedColor]
+    : allSizes
+
   const hasColors = colors.length > 0
+  const hasSizes = availableSizes.length > 0
   const needsSizeSelection = hasSizes && !selectedSize
 
   function handleColorSelect(color: string) {
     setSelectedColor(color)
     const idx = colors.indexOf(color)
     if (idx !== -1) onColorChange?.(color, idx)
+
+    // Clear size if it doesn't exist for the new color
+    const newSizes = product.color_sizes?.[color] ?? allSizes
+    if (selectedSize && !newSizes.includes(selectedSize)) {
+      setSelectedSize(newSizes.length === 1 ? newSizes[0] : "")
+    }
   }
 
   function handleAdd() {
@@ -81,7 +91,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
   return (
     <div className="space-y-5">
 
-      {/* ── 1. Color selector (before size) ── */}
+      {/* ── 1. Color ── */}
       {hasColors && (
         <div>
           <div className="flex items-baseline justify-between mb-3">
@@ -135,7 +145,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
         </div>
       )}
 
-      {/* ── 2. Size selector ── */}
+      {/* ── 2. Talla (filtered by selected color) ── */}
       {hasSizes && (
         <div>
           <div className="flex items-baseline justify-between mb-3">
@@ -144,6 +154,11 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
               style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.55 }}
             >
               Talla
+              {hasColors && !selectedColor && (
+                <span style={{ opacity: 0.5, fontWeight: 400, letterSpacing: 0 }}>
+                  {" — "}selecciona un color primero
+                </span>
+              )}
             </p>
             {selectedSize && (
               <span
@@ -155,7 +170,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            {sizes.map((size) => {
+            {availableSizes.map((size) => {
               const selected = selectedSize === size
               const stockCount = product.size_stock?.[size]
               const outOfStock = product.size_stock != null && (stockCount ?? 0) === 0
@@ -194,7 +209,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
         </div>
       )}
 
-      {/* ── 3. Add to cart ── */}
+      {/* ── 3. Agregar al carrito ── */}
       <button
         onClick={handleAdd}
         className="w-full py-4 text-[11px] uppercase tracking-[0.2em] transition-all duration-300"
@@ -205,11 +220,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
           opacity: needsSizeSelection ? 0.6 : 1,
         }}
       >
-        {added
-          ? "¡Agregado al carrito!"
-          : needsSizeSelection
-          ? "Selecciona una talla"
-          : "Agregar al carrito"}
+        {added ? "¡Agregado al carrito!" : needsSizeSelection ? "Selecciona una talla" : "Agregar al carrito"}
       </button>
 
     </div>
