@@ -52,18 +52,18 @@ export default async function HomePage() {
           className="flex flex-col items-center justify-center text-center px-6 py-20 md:py-28"
           style={{ background: "var(--bg)" }}
         >
-          <p
-            className="text-base mb-3"
-            style={{ fontFamily: "var(--font-caveat)", color: "var(--pink)", fontSize: "1.2rem" }}
-          >
-            bienvenida
-          </p>
           <h1
-            className="text-6xl md:text-8xl italic leading-none mb-5"
+            className="text-6xl md:text-8xl italic leading-none mb-4"
             style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
           >
             Theia
           </h1>
+          <p
+            className="text-base mb-2"
+            style={{ fontFamily: "var(--font-caveat)", color: "var(--pink)", fontSize: "1.3rem" }}
+          >
+            Viste como te mereces
+          </p>
           <p
             className="text-xs uppercase tracking-[0.3em] mb-10 max-w-xs"
             style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.45 }}

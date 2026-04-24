@@ -35,7 +35,7 @@ export default function Footer() {
             className="mb-4"
             style={{ fontFamily: "var(--font-caveat)", color: "var(--pink)", fontSize: "1rem" }}
           >
-            moda que habla por vos
+            moda que habla por ti
           </p>
           <p
             className="text-[11px] leading-relaxed mb-5"

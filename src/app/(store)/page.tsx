@@ -17,7 +17,7 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="mb-12 text-center py-16">
         <h1 className="text-5xl font-bold tracking-tight mb-4">THEIA</h1>
-        <p className="text-lg text-gray-500">Moda que habla por vos</p>
+        <p className="text-lg text-gray-500">Moda que habla por ti</p>
       </section>
 
       {/* Productos destacados */}

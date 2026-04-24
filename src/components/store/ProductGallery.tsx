@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import Image from "next/image"
 
 interface Props {
@@ -12,30 +12,17 @@ interface Props {
 
 export default function ProductGallery({ images, title, activeIndex, onActiveChange }: Props) {
   const [internalActive, setInternalActive] = useState(0)
-  const mobileScrollRef = useRef<HTMLDivElement>(null)
-  const programmaticScroll = useRef(false)
+  const touchStartX = useRef<number | null>(null)
 
   const controlled = activeIndex !== undefined
   const active = controlled ? activeIndex : internalActive
   const clampedActive = images?.length ? Math.min(active, images.length - 1) : 0
 
   function setActive(i: number) {
-    if (controlled) onActiveChange?.(i)
-    else setInternalActive(i)
+    const clamped = Math.max(0, Math.min(i, images.length - 1))
+    if (controlled) onActiveChange?.(clamped)
+    else setInternalActive(clamped)
   }
-
-  // Sync mobile carousel to active index when parent changes it (e.g. color pick)
-  useEffect(() => {
-    const el = mobileScrollRef.current
-    if (!el || !images?.length) return
-    const target = clampedActive * el.clientWidth
-    if (Math.abs(el.scrollLeft - target) > 4) {
-      programmaticScroll.current = true
-      el.scrollTo({ left: target, behavior: "smooth" })
-      const timer = setTimeout(() => { programmaticScroll.current = false }, 600)
-      return () => clearTimeout(timer)
-    }
-  }, [clampedActive, images?.length])
 
   if (!images?.length) {
     return (
@@ -48,31 +35,39 @@ export default function ProductGallery({ images, title, activeIndex, onActiveCha
     )
   }
 
-  function handleMobileScroll(e: React.UIEvent<HTMLDivElement>) {
-    if (programmaticScroll.current) return
-    const el = e.currentTarget
-    const index = Math.round(el.scrollLeft / el.clientWidth)
-    if (index !== clampedActive && index >= 0 && index < images.length) {
-      setActive(index)
-    }
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return
+    const dx = e.changedTouches[0].clientX - touchStartX.current
+    touchStartX.current = null
+    if (Math.abs(dx) < 50) return
+    if (dx < 0) setActive(clampedActive + 1)
+    else setActive(clampedActive - 1)
   }
 
   return (
     <div className="space-y-3">
 
-      {/* ── MOBILE: full-width snap carousel ────────────────────── */}
+      {/* ── MOBILE: button prev/next carousel ───────────────────── */}
       <div className="lg:hidden space-y-2">
         <div
-          ref={mobileScrollRef}
-          onScroll={handleMobileScroll}
-          className="flex overflow-x-auto snap-x snap-mandatory rounded-xl"
-          style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
+          className="relative w-full overflow-hidden rounded-xl"
+          style={{ aspectRatio: "3/4" }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           {images.map((img, i) => (
             <div
               key={i}
-              className="flex-shrink-0 w-full snap-center relative"
-              style={{ aspectRatio: "3/4" }}
+              className="absolute inset-0"
+              style={{
+                opacity: i === clampedActive ? 1 : 0,
+                transition: "opacity 300ms ease",
+                pointerEvents: i === clampedActive ? "auto" : "none",
+              }}
             >
               <Image
                 src={img}
@@ -84,6 +79,40 @@ export default function ProductGallery({ images, title, activeIndex, onActiveCha
               />
             </div>
           ))}
+
+          {/* Prev button */}
+          {clampedActive > 0 && (
+            <button
+              onClick={() => setActive(clampedActive - 1)}
+              aria-label="Imagen anterior"
+              className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center"
+              style={{
+                width: "36px", height: "36px", borderRadius: "50%",
+                background: "rgba(255,255,255,0.75)", border: "none",
+                color: "var(--ink)", fontSize: "18px", cursor: "pointer",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              ‹
+            </button>
+          )}
+
+          {/* Next button */}
+          {clampedActive < images.length - 1 && (
+            <button
+              onClick={() => setActive(clampedActive + 1)}
+              aria-label="Imagen siguiente"
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center"
+              style={{
+                width: "36px", height: "36px", borderRadius: "50%",
+                background: "rgba(255,255,255,0.75)", border: "none",
+                color: "var(--ink)", fontSize: "18px", cursor: "pointer",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              ›
+            </button>
+          )}
         </div>
 
         {/* Dots */}
@@ -92,15 +121,7 @@ export default function ProductGallery({ images, title, activeIndex, onActiveCha
             {images.map((_, i) => (
               <button
                 key={i}
-                onClick={() => {
-                  setActive(i)
-                  const el = mobileScrollRef.current
-                  if (el) {
-                    programmaticScroll.current = true
-                    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" })
-                    setTimeout(() => { programmaticScroll.current = false }, 600)
-                  }
-                }}
+                onClick={() => setActive(i)}
                 aria-label={`Imagen ${i + 1}`}
                 style={{
                   width: clampedActive === i ? "20px" : "6px",
