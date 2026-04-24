@@ -96,19 +96,31 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
           <div className="flex flex-wrap gap-2">
             {product.sizes.map((size) => {
               const selected = selectedSize === size
+              const stockCount = product.size_stock?.[size]
+              const outOfStock = product.size_stock != null && (stockCount ?? 0) === 0
               return (
                 <button
                   key={size}
-                  onClick={() => { setSelectedSize(size); setSizeError(false) }}
-                  className="px-4 text-[11px] uppercase tracking-wide transition-all duration-150 flex items-center justify-center"
+                  onClick={() => { if (!outOfStock) { setSelectedSize(size); setSizeError(false) } }}
+                  disabled={outOfStock}
+                  title={outOfStock ? "Sin stock" : undefined}
+                  className="px-4 text-[11px] uppercase tracking-wide transition-all duration-150 flex items-center justify-center relative"
                   style={{
                     fontFamily: "var(--font-space-mono)",
                     minHeight: "44px",
                     minWidth: "44px",
-                    border: `1px solid ${selected ? "var(--ink)" : "rgba(26,26,26,0.2)"}`,
-                    background: selected ? "var(--ink)" : "transparent",
-                    color: selected ? "var(--bg)" : "var(--ink)",
-                    opacity: selected ? 1 : 0.7,
+                    border: `1px solid ${
+                      outOfStock
+                        ? "rgba(26,26,26,0.1)"
+                        : selected
+                        ? "var(--ink)"
+                        : "rgba(26,26,26,0.2)"
+                    }`,
+                    background: outOfStock ? "transparent" : selected ? "var(--ink)" : "transparent",
+                    color: outOfStock ? "rgba(26,26,26,0.25)" : selected ? "var(--bg)" : "var(--ink)",
+                    opacity: outOfStock ? 0.5 : selected ? 1 : 0.7,
+                    cursor: outOfStock ? "not-allowed" : "pointer",
+                    textDecoration: outOfStock ? "line-through" : "none",
                   }}
                 >
                   {size}

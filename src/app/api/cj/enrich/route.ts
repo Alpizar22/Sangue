@@ -18,6 +18,7 @@ interface CJVariant {
   variantSellPrice: number
   variantImage: string
   variantSku: string
+  variantStock?: number    // stock per variant (may be absent in some responses)
 }
 
 interface CJDetailRaw {
@@ -139,13 +140,20 @@ export async function GET(req: NextRequest) {
             // colorImageMap preserves insertion order (first variant per color wins)
             const colorImageMap = new Map<string, string>()
             const sizesSet = new Set<string>()
+            // sizeStock: aggregate stock across all colors per size
+            const sizeStockMap = new Map<string, number>()
+            const hasVariantStock = variantList.some((v) => v.variantStock != null)
 
             for (const v of variantList) {
               if (!v.variantKey) continue
               const { color, size } = parseVariantKey(v.variantKey)
-              if (size) sizesSet.add(size)
+              if (size) {
+                sizesSet.add(size)
+                if (hasVariantStock && v.variantStock != null) {
+                  sizeStockMap.set(size, (sizeStockMap.get(size) ?? 0) + v.variantStock)
+                }
+              }
               if (color && !colorImageMap.has(color)) {
-                // Use variantImage if available, else fall back to bigImage
                 colorImageMap.set(color, v.variantImage || d.bigImage || "")
               }
             }
@@ -153,6 +161,9 @@ export async function GET(req: NextRequest) {
             const colors = [...colorImageMap.keys()]
             const colorImages = [...colorImageMap.values()].filter(Boolean)
             const sizes = [...sizesSet]
+            const size_stock = hasVariantStock && sizeStockMap.size > 0
+              ? Object.fromEntries(sizeStockMap)
+              : null
 
             // ── All product images ─────────────────────────────────────────
             let allImages: string[] = d.productImageSet ?? []
@@ -167,9 +178,12 @@ export async function GET(req: NextRequest) {
             const images = [...colorImages, ...remainingImages]
 
             // ── Persist ────────────────────────────────────────────────────
+            const updatePayload: Record<string, unknown> = { images, sizes, colors }
+            if (size_stock !== null) updatePayload.size_stock = size_stock
+
             const { error: updateErr } = await supabase
               .from("products")
-              .update({ images, sizes, colors })
+              .update(updatePayload)
               .eq("id", product.id)
 
             if (updateErr) throw new Error(updateErr.message)

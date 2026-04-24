@@ -30,6 +30,7 @@ export interface Product {
   markup_percentage: number
   subcategory?: string | null
   seccion?: string | null
+  size_stock?: Record<string, number> | null
 }
 
 export interface CartItem {
