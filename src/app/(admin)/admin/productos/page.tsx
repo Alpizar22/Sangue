@@ -43,6 +43,7 @@ export default async function AdminProductsPage() {
               <th className="px-4 py-3">Precio costo</th>
               <th className="px-4 py-3">Precio venta</th>
               <th className="px-4 py-3">Markup</th>
+              <th className="px-4 py-3">Sección</th>
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -68,6 +69,7 @@ export default async function AdminProductsPage() {
                 <td className="px-4 py-3 text-gray-900">${Number(p.cost_price).toLocaleString("es-MX")}</td>
                 <td className="px-4 py-3 font-semibold text-gray-900">${Number(p.sale_price).toLocaleString("es-MX")}</td>
                 <td className="px-4 py-3 text-green-600">{Number(p.markup_percentage).toFixed(0)}%</td>
+                <td className="px-4 py-3 text-gray-500 text-xs">{p.seccion ?? "—"}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs ${
                     p.status === "active" ? "bg-green-100 text-green-700" :

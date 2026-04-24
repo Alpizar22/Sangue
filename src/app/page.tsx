@@ -71,7 +71,7 @@ export default async function HomePage() {
             moda · envíos a todo México
           </p>
           <Link
-            href="/productos?categoria=Lady+Dresses"
+            href="/coleccion"
             className="inline-block px-8 py-3 text-xs uppercase tracking-[0.2em] transition-all hover:opacity-80"
             style={{ fontFamily: "var(--font-space-mono)", background: "var(--ink)", color: "var(--bg)" }}
           >
@@ -86,7 +86,7 @@ export default async function HomePage() {
 
           {/* Colección Mujer */}
           <Link
-            href="/productos?categoria=Lady+Dresses"
+            href="/coleccion"
             className="group relative overflow-hidden flex flex-col justify-end"
             style={{ minHeight: "480px" }}
           >
@@ -131,7 +131,7 @@ export default async function HomePage() {
 
           {/* Jerseys */}
           <Link
-            href="/productos?categoria=Jerseys"
+            href="/jerseys"
             className="group relative overflow-hidden flex flex-col justify-end"
             style={{ minHeight: "480px", background: "var(--night)" }}
           >
@@ -186,7 +186,7 @@ export default async function HomePage() {
                   Nuevos ingresos
                 </h2>
                 <Link
-                  href="/productos?orden=nuevos"
+                  href="/coleccion?orden=nuevos"
                   className="text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-100"
                   style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
                 >

@@ -3,7 +3,9 @@
 import { useState, useCallback } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 
-const CATEGORIES = [
+export type CategoryOption = { value: string; label: string }
+
+const DEFAULT_CATEGORIES: CategoryOption[] = [
   { value: "", label: "Todos" },
   { value: "Lady Dresses", label: "Vestidos" },
   { value: "Blouses & Shirts", label: "Blusas" },
@@ -11,7 +13,7 @@ const CATEGORIES = [
   { value: "Jerseys", label: "Jerseys" },
 ]
 
-const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
+const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
 
 const SORT_OPTIONS = [
   { value: "nuevos", label: "Más nuevos" },
@@ -21,8 +23,12 @@ const SORT_OPTIONS = [
 
 function FilterContent({
   onClose,
+  categories,
+  sizes,
 }: {
   onClose?: () => void
+  categories: CategoryOption[]
+  sizes: string[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -62,7 +68,7 @@ function FilterContent({
           Categoría
         </p>
         <div className="space-y-1.5">
-          {CATEGORIES.map(({ value, label }) => {
+          {categories.map(({ value, label }) => {
             const active = currentCat === value
             return (
               <button
@@ -96,7 +102,7 @@ function FilterContent({
           Talla
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {SIZES.map((size) => {
+          {sizes.map((size) => {
             const selected = currentTalla === size
             return (
               <button
@@ -168,7 +174,13 @@ function FilterContent({
   )
 }
 
-export default function FilterPanel() {
+export default function FilterPanel({
+  categories = DEFAULT_CATEGORIES,
+  sizes = DEFAULT_SIZES,
+}: {
+  categories?: CategoryOption[]
+  sizes?: string[]
+} = {}) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const searchParams = useSearchParams()
 
@@ -184,7 +196,7 @@ export default function FilterPanel() {
     <>
       {/* ── Desktop sidebar (lg+) ─────────────────────── */}
       <aside className="hidden lg:block w-44 flex-shrink-0 pt-1">
-        <FilterContent />
+        <FilterContent categories={categories} sizes={sizes} />
       </aside>
 
       {/* ── Mobile top bar — w-full so it never shrinks as a flex-item ── */}
@@ -254,7 +266,7 @@ export default function FilterPanel() {
               </button>
             </div>
 
-            <FilterContent onClose={() => setDrawerOpen(false)} />
+            <FilterContent categories={categories} sizes={sizes} onClose={() => setDrawerOpen(false)} />
 
             <button
               onClick={() => setDrawerOpen(false)}

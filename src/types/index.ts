@@ -29,6 +29,7 @@ export interface Product {
   shein_sku: string | null
   markup_percentage: number
   subcategory?: string | null
+  seccion?: string | null
 }
 
 export interface CartItem {

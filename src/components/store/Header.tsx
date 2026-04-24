@@ -6,15 +6,15 @@ import { ShoppingBag } from "lucide-react"
 import { useCartStore } from "@/store/cart"
 
 const COLECCION_MENU = [
-  { href: "/productos", label: "Todos" },
-  { href: "/productos?categoria=Lady+Dresses", label: "Vestidos" },
-  { href: "/productos?categoria=Blouses+%26+Shirts", label: "Blusas" },
-  { href: "/productos?categoria=Ladies+Short+Sleeve", label: "Camisetas" },
-  { href: "/productos?orden=nuevos", label: "Nuevos ingresos" },
+  { href: "/coleccion", label: "Todas" },
+  { href: "/coleccion?categoria=Lady+Dresses", label: "Vestidos" },
+  { href: "/coleccion?categoria=Blouses+%26+Shirts", label: "Blusas" },
+  { href: "/coleccion?categoria=Ladies+Short+Sleeve", label: "Camisetas" },
+  { href: "/coleccion?orden=nuevos", label: "Nuevos ingresos" },
 ]
 
 const JERSEYS_MENU = [
-  { href: "/productos?categoria=Jerseys", label: "Todos los jerseys" },
+  { href: "/jerseys", label: "Todos los jerseys" },
 ]
 
 type MenuKey = "coleccion" | "jerseys"
