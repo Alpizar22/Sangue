@@ -36,6 +36,8 @@ function fieldClass(err?: string) {
   return err ? ERROR_STYLE : FIELD_STYLE
 }
 
+const SHIPPING_COST = 120
+
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCartStore()
   const router = useRouter()
@@ -364,7 +366,7 @@ export default function CheckoutPage() {
                 color: "var(--bg)",
               }}
             >
-              {loading ? "Procesando…" : `Pagar $${total().toLocaleString("es-MX")} MXN con MercadoPago`}
+              {loading ? "Procesando…" : `Pagar $${(total() + SHIPPING_COST).toLocaleString("es-MX")} MXN con MercadoPago`}
             </button>
           </form>
 
@@ -411,27 +413,46 @@ export default function CheckoutPage() {
               ))}
             </div>
             <div
-              className="pt-3 flex justify-between items-center"
+              className="space-y-2 pt-3"
               style={{ borderTop: "1px solid rgba(26,26,26,0.1)" }}
             >
-              <span
-                className="text-[10px] uppercase tracking-[0.2em]"
-                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
-              >
-                Total
-              </span>
-              <span
-                className="text-lg font-semibold"
+              <div
+                className="flex justify-between text-[12px]"
                 style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
               >
-                ${total().toLocaleString("es-MX")}
-              </span>
+                <span style={{ opacity: 0.5 }}>Subtotal</span>
+                <span>${total().toLocaleString("es-MX")}</span>
+              </div>
+              <div
+                className="flex justify-between text-[12px]"
+                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+              >
+                <span style={{ opacity: 0.5 }}>Envío estándar</span>
+                <span>${SHIPPING_COST.toLocaleString("es-MX")}</span>
+              </div>
+              <div
+                className="flex justify-between items-center pt-2"
+                style={{ borderTop: "1px solid rgba(26,26,26,0.07)" }}
+              >
+                <span
+                  className="text-[10px] uppercase tracking-[0.2em]"
+                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+                >
+                  Total
+                </span>
+                <span
+                  className="text-lg font-semibold"
+                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+                >
+                  ${(total() + SHIPPING_COST).toLocaleString("es-MX")}
+                </span>
+              </div>
             </div>
             <p
               className="text-[10px] text-center"
               style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
             >
-              Pago seguro con MercadoPago · Envío 7–15 días hábiles
+              Pago seguro con MercadoPago · 15–25 días hábiles
             </p>
           </div>
         </div>

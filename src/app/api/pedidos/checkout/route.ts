@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     const subtotal = items.reduce((s, i) => s + i.product.sale_price * i.quantity, 0)
-    const shippingCost = 0
+    const shippingCost = 120
     const total = subtotal + shippingCost
 
     // Crear orden
@@ -92,13 +92,22 @@ export async function POST(req: NextRequest) {
     // Crear preferencia MercadoPago
     const mpBody = {
       external_reference: order.id,
-      items: items.map((i) => ({
-        id: i.product_id,
-        title: i.product.title.slice(0, 256),
-        quantity: i.quantity,
-        unit_price: Number(i.product.sale_price),
-        currency_id: "MXN",
-      })),
+      items: [
+        ...items.map((i) => ({
+          id: i.product_id,
+          title: i.product.title.slice(0, 256),
+          quantity: i.quantity,
+          unit_price: Number(i.product.sale_price),
+          currency_id: "MXN",
+        })),
+        {
+          id: "envio",
+          title: "Envío estándar a México",
+          quantity: 1,
+          unit_price: 120,
+          currency_id: "MXN",
+        },
+      ],
       payer: { email: customer.email.toLowerCase().trim(), name: customer.name.trim() },
       back_urls: {
         success: `${SITE_URL}/pedidos/${order.id}?status=success`,
