@@ -36,7 +36,7 @@ function fieldClass(err?: string) {
   return err ? ERROR_STYLE : FIELD_STYLE
 }
 
-const SHIPPING_COST = 120
+const SHIPPING_COST = 155
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCartStore()

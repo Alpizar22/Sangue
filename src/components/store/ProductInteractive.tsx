@@ -105,20 +105,12 @@ export default function ProductInteractive({ product }: Props) {
         </h1>
 
         {/* 4. Precio */}
-        <div>
-          <p
-            className="text-3xl"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
-          >
-            ${Number(product.sale_price).toLocaleString("es-MX")}
-          </p>
-          <p
-            className="text-[11px] mt-1"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.45 }}
-          >
-            + $120 MXN envío estándar · 15–25 días
-          </p>
-        </div>
+        <p
+          className="text-3xl"
+          style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+        >
+          ${Number(product.sale_price).toLocaleString("es-MX")}
+        </p>
 
         <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
 

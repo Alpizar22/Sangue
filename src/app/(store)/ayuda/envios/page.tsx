@@ -3,42 +3,7 @@ import Link from "next/link"
 
 export const metadata: Metadata = {
   title: "Política de Envíos — Theia",
-  description: "Información sobre tiempos de envío, transportistas y cobertura de entregas Theia.",
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-3">
-      <h2
-        className="text-[10px] uppercase tracking-[0.25em]"
-        style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
-      >
-        {title}
-      </h2>
-      <div
-        className="space-y-2 text-[13px] leading-relaxed"
-        style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.7 }}
-      >
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div
-      className="flex items-start justify-between gap-4 py-3"
-      style={{ borderBottom: "1px solid rgba(26,26,26,0.06)" }}
-    >
-      <span style={{ opacity: 0.55, flexShrink: 0, fontFamily: "var(--font-space-mono)", fontSize: "12px", color: "var(--ink)" }}>
-        {label}
-      </span>
-      <span style={{ textAlign: "right", fontFamily: "var(--font-space-mono)", fontSize: "12px", color: "var(--ink)" }}>
-        {value}
-      </span>
-    </div>
-  )
+  description: "Información sobre tiempos y costos de envío a toda la República Mexicana.",
 }
 
 export default function EnviosPage() {
@@ -56,74 +21,121 @@ export default function EnviosPage() {
           className="text-[11px] uppercase tracking-[0.2em] mb-12"
           style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
         >
-          Todo lo que necesitas saber sobre el envío de tu pedido
+          Todo lo que necesitas saber sobre la entrega de tu pedido
         </p>
 
         <div className="space-y-10">
 
-          <Section title="Cobertura">
-            <p>Por el momento realizamos envíos únicamente a toda la República Mexicana.</p>
-            <p style={{ opacity: 0.5, fontSize: "12px" }}>Envíos internacionales: próximamente.</p>
-          </Section>
+          {/* Resumen visual */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { num: "1–3",    unit: "días hábiles", label: "Procesamiento" },
+              { num: "10–17",  unit: "días hábiles", label: "Entrega estimada" },
+              { num: "$155",   unit: "MXN",          label: "Costo de envío" },
+            ].map(({ num, unit, label }) => (
+              <div
+                key={label}
+                className="p-4 text-center"
+                style={{ border: "1px solid rgba(26,26,26,0.08)", background: "var(--paper)" }}
+              >
+                <p
+                  className="text-2xl italic mb-0.5"
+                  style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+                >
+                  {num}
+                </p>
+                <p
+                  className="text-[9px] uppercase tracking-[0.15em]"
+                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+                >
+                  {unit}
+                </p>
+                <p
+                  className="text-[9px] mt-2 uppercase tracking-[0.1em]"
+                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.3 }}
+                >
+                  {label}
+                </p>
+              </div>
+            ))}
+          </div>
 
           <div style={{ height: "1px", background: "rgba(26,26,26,0.08)" }} />
 
-          <Section title="Tiempos estimados">
-            <div>
-              <Row label="Procesamiento del pedido"   value="1–3 días hábiles" />
-              <Row label="CJPacket MX Ordinary"       value="15–25 días hábiles" />
-              <Row label="YunExpress Ordinary"        value="8–15 días hábiles (costo adicional)" />
-              <Row label="Total estimado (estándar)"  value="16–28 días hábiles" />
-            </div>
-            <p style={{ fontSize: "11px", opacity: 0.45, marginTop: "8px" }}>
-              Los días hábiles no incluyen sábados, domingos ni días festivos oficiales en México.
+          {/* Cómo funciona */}
+          <div className="space-y-4">
+            <p
+              className="text-[10px] uppercase tracking-[0.25em]"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+            >
+              Cómo funciona
             </p>
-          </Section>
+            <div
+              className="space-y-3 text-[13px] leading-relaxed"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.7 }}
+            >
+              <p>
+                Todos los pedidos se procesan en <strong style={{ opacity: 1 }}>1 a 3 días hábiles</strong> a partir de
+                la confirmación de pago.
+              </p>
+              <p>
+                El tiempo de entrega estimado es de <strong style={{ opacity: 1 }}>10 a 17 días hábiles</strong> a
+                cualquier punto de la República Mexicana.
+              </p>
+              <p>
+                El costo de envío es de <strong style={{ opacity: 1 }}>$155 MXN por pedido</strong>, sin importar
+                la cantidad de artículos que incluya.
+              </p>
+            </div>
+          </div>
 
           <div style={{ height: "1px", background: "rgba(26,26,26,0.08)" }} />
 
-          <Section title="Número de rastreo">
-            <p>
-              Una vez que tu pedido sea despachado, recibirás un correo electrónico con tu número
-              de guía. Puedes rastrear tu envío en{" "}
-              <a
-                href="https://t.17track.net/es"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "var(--accent-2)", textDecoration: "underline" }}
-              >
-                17track.net
-              </a>
-              {" "}o desde nuestra página de{" "}
-              <Link
-                href="/ayuda/seguimiento"
-                style={{ color: "var(--accent-2)", textDecoration: "underline" }}
-              >
-                seguimiento
+          {/* Rastreo */}
+          <div className="space-y-3">
+            <p
+              className="text-[10px] uppercase tracking-[0.25em]"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+            >
+              Rastreo de tu pedido
+            </p>
+            <p
+              className="text-[13px] leading-relaxed"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.7 }}
+            >
+              Una vez despachado, recibirás un número de guía por email. Puedes usarlo en nuestra
+              página de{" "}
+              <Link href="/ayuda/seguimiento" style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
+                seguimiento de pedido
               </Link>
               .
             </p>
-          </Section>
+          </div>
 
           <div style={{ height: "1px", background: "rgba(26,26,26,0.08)" }} />
 
-          <Section title="Posibles retrasos">
-            <p>
-              Durante temporadas de alta demanda (Buen Fin, Navidad, San Valentín) los tiempos
-              de envío pueden extenderse 5–10 días adicionales. Te avisaremos si hay algún
-              retraso relevante en tu pedido.
+          {/* Posibles retrasos */}
+          <div className="space-y-3">
+            <p
+              className="text-[10px] uppercase tracking-[0.25em]"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+            >
+              Posibles retrasos
             </p>
-          </Section>
-
-          <div style={{ height: "1px", background: "rgba(26,26,26,0.08)" }} />
-
-          <Section title="Aduana">
-            <p>
-              En casos raros, los paquetes pueden ser retenidos temporalmente en aduana. Theia
-              no se hace responsable de cargos adicionales generados por revisiones aduanales.
-              En caso de retención, te notificaremos de inmediato para orientarte en el proceso.
-            </p>
-          </Section>
+            <div
+              className="space-y-2 text-[13px] leading-relaxed"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.7 }}
+            >
+              <p>
+                Durante temporadas de alta demanda (Buen Fin, Navidad, San Valentín) los tiempos
+                pueden extenderse algunos días adicionales.
+              </p>
+              <p>
+                En casos excepcionales, los paquetes pueden ser retenidos en aduana. Si esto ocurre,
+                te contactamos de inmediato para orientarte.
+              </p>
+            </div>
+          </div>
 
           <div style={{ height: "1px", background: "rgba(26,26,26,0.08)" }} />
 
@@ -154,7 +166,7 @@ export default function EnviosPage() {
               <a href="mailto:hola@theia.lat" style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
                 hola@theia.lat
               </a>
-              . Respondemos en horario Lun–Vie · 10:00–18:00 hrs.
+              . Respondemos Lun–Vie · 10:00–18:00 hrs.
             </p>
           </div>
 

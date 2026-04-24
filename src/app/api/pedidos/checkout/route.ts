@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     const subtotal = items.reduce((s, i) => s + i.product.sale_price * i.quantity, 0)
-    const shippingCost = 120
+    const shippingCost = 155
     const total = subtotal + shippingCost
 
     // Crear orden
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
           id: "envio",
           title: "Envío estándar a México",
           quantity: 1,
-          unit_price: 120,
+          unit_price: 155,
           currency_id: "MXN",
         },
       ],

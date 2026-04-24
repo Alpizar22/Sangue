@@ -4,7 +4,7 @@ import { useCartStore } from "@/store/cart"
 import Link from "next/link"
 import { Trash2 } from "lucide-react"
 
-const SHIPPING_COST = 120
+const SHIPPING_COST = 155
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total, clearCart } = useCartStore()

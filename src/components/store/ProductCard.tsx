@@ -68,12 +68,6 @@ export default function ProductCard({ product }: { product: Product }) {
         >
           ${Number(product.sale_price).toLocaleString("es-MX")}
         </p>
-        <p
-          className="text-[9px] mt-0.5"
-          style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
-        >
-          + $120 envío
-        </p>
       </div>
     </Link>
   )
