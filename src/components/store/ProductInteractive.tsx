@@ -9,15 +9,62 @@ interface Props {
   product: Product
 }
 
-/**
- * Full 2-column product section as a client component.
- * Owns activeIndex so that selecting a color in AddToCartButton
- * updates the image in ProductGallery.
- *
- * Convention (enforced by /api/cj/enrich):
- *   images[i] corresponds to colors[i]  for i < colors.length
- *   images[i] for i >= colors.length are general product shots
- */
+const MATERIAL_KEYWORDS = /material|fabric|polyester|cotton|composition|spandex|elastane|nylon|linen|silk|rayon|viscose|acrylic|wool|lycra|chiffon|satin|jersey/i
+
+function extractMaterial(desc: string): string | null {
+  const sentences = desc.split(/[.\n;]+/)
+  for (const s of sentences) {
+    if (MATERIAL_KEYWORDS.test(s) && s.trim().length > 0) {
+      return s.trim()
+    }
+  }
+  return null
+}
+
+const WHATSAPP = "https://wa.me/5213312345678"
+
+const SIZE_GUIDE = [
+  { talla: "XS", busto: "82",  cintura: "64",  cadera: "87"  },
+  { talla: "S",  busto: "86",  cintura: "68",  cadera: "91"  },
+  { talla: "M",  busto: "90",  cintura: "72",  cadera: "95"  },
+  { talla: "L",  busto: "94",  cintura: "76",  cadera: "99"  },
+  { talla: "XL", busto: "98",  cintura: "80",  cadera: "103" },
+  { talla: "XXL",busto: "102", cintura: "84",  cadera: "107" },
+  { talla: "3XL",busto: "106", cintura: "88",  cadera: "111" },
+]
+
+function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details
+      className="rounded-xl overflow-hidden"
+      style={{ border: "1px solid rgba(26,26,26,0.08)" }}
+    >
+      <summary
+        className="px-4 py-3.5 cursor-pointer flex items-center justify-between select-none"
+        style={{
+          fontFamily: "var(--font-space-mono)",
+          fontSize: "10px",
+          textTransform: "uppercase",
+          letterSpacing: "0.2em",
+          color: "var(--ink)",
+          opacity: 0.6,
+          background: "var(--paper)",
+          listStyle: "none",
+        }}
+      >
+        <span>{title}</span>
+        <span className="text-base leading-none" style={{ opacity: 0.5 }}>+</span>
+      </summary>
+      <div
+        className="px-4 py-4"
+        style={{ background: "var(--bg)" }}
+      >
+        {children}
+      </div>
+    </details>
+  )
+}
+
 export default function ProductInteractive({ product }: Props) {
   const [activeIndex, setActiveIndex] = useState(0)
 
@@ -28,8 +75,11 @@ export default function ProductInteractive({ product }: Props) {
     }
   }
 
+  const desc = product.description ?? ""
+  const material = desc ? extractMaterial(desc) : null
+
   return (
-    <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
+    <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
 
       {/* ── LEFT: Gallery ─────────────────────────────────────── */}
       <ProductGallery
@@ -40,7 +90,7 @@ export default function ProductInteractive({ product }: Props) {
       />
 
       {/* ── RIGHT: Info + actions ─────────────────────────────── */}
-      <div className="space-y-6">
+      <div className="space-y-5">
 
         {product.category && (
           <p
@@ -67,28 +117,97 @@ export default function ProductInteractive({ product }: Props) {
 
         <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
 
+        {/* Size + color selectors + add to cart */}
         <AddToCartButton product={product} onColorChange={handleColorChange} />
 
         <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
 
-        {product.description && (
-          <div>
-            <p
-              className="text-[10px] uppercase tracking-[0.2em] mb-3"
-              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+        {/* Detalles del producto */}
+        <Accordion title="Detalles del producto">
+          <div className="space-y-3">
+            {material && (
+              <div>
+                <p
+                  className="text-[9px] uppercase tracking-[0.2em] mb-1"
+                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+                >
+                  Material
+                </p>
+                <p
+                  className="text-[12px] leading-relaxed"
+                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.75 }}
+                >
+                  {material}
+                </p>
+              </div>
+            )}
+            {desc ? (
+              <p
+                className="text-[12px] leading-relaxed"
+                style={{ color: "var(--ink)", opacity: 0.65 }}
+              >
+                {desc}
+              </p>
+            ) : (
+              <p
+                className="text-[12px] leading-relaxed"
+                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.6 }}
+              >
+                Consulta con nosotros para más detalles.{" "}
+                <a
+                  href={WHATSAPP}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "var(--accent-2)", textDecoration: "underline" }}
+                >
+                  Escríbenos por WhatsApp →
+                </a>
+              </p>
+            )}
+          </div>
+        </Accordion>
+
+        {/* Guía de tallas */}
+        <Accordion title="Guía de tallas">
+          <div className="overflow-x-auto">
+            <table
+              className="w-full text-[11px]"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
             >
-              Descripción
-            </p>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(26,26,26,0.1)" }}>
+                  {["Talla", "Busto", "Cintura", "Cadera"].map((h) => (
+                    <th
+                      key={h}
+                      className="py-2 pr-4 text-left font-normal"
+                      style={{ opacity: 0.4, fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.15em" }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {SIZE_GUIDE.map(({ talla, busto, cintura, cadera }) => (
+                  <tr key={talla} style={{ borderBottom: "1px solid rgba(26,26,26,0.05)" }}>
+                    <td className="py-2 pr-4 font-medium" style={{ opacity: 0.9 }}>{talla}</td>
+                    <td className="py-2 pr-4" style={{ opacity: 0.65 }}>{busto} cm</td>
+                    <td className="py-2 pr-4" style={{ opacity: 0.65 }}>{cintura} cm</td>
+                    <td className="py-2 pr-4" style={{ opacity: 0.65 }}>{cadera} cm</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             <p
-              className="text-sm leading-relaxed"
-              style={{ color: "var(--ink)", opacity: 0.7 }}
+              className="mt-3 text-[10px]"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
             >
-              {product.description}
+              Medidas orientativas. Ante dudas, consulta por WhatsApp.
             </p>
           </div>
-        )}
+        </Accordion>
 
-        {/* Shipping */}
+        {/* Envío */}
         <div
           className="rounded-xl p-4 space-y-2"
           style={{ background: "var(--paper)", border: "1px solid rgba(26,26,26,0.08)" }}
@@ -127,47 +246,23 @@ export default function ProductInteractive({ product }: Props) {
           </div>
         </div>
 
-        {/* Returns */}
-        <details
-          className="rounded-xl overflow-hidden"
-          style={{ border: "1px solid rgba(26,26,26,0.08)" }}
-        >
-          <summary
-            className="px-4 py-3 cursor-pointer flex items-center justify-between select-none"
-            style={{
-              fontFamily: "var(--font-space-mono)",
-              fontSize: "10px",
-              textTransform: "uppercase",
-              letterSpacing: "0.2em",
-              color: "var(--ink)",
-              opacity: 0.5,
-              background: "var(--paper)",
-              listStyle: "none",
-            }}
-          >
-            <span>Política de devoluciones</span>
-            <span className="text-base leading-none" style={{ opacity: 0.6 }}>+</span>
-          </summary>
+        {/* Devoluciones */}
+        <Accordion title="Política de devoluciones">
           <div
-            className="px-4 py-4 space-y-2 text-[12px] leading-relaxed"
-            style={{
-              fontFamily: "var(--font-space-mono)",
-              color: "var(--ink)",
-              opacity: 0.6,
-              background: "var(--bg)",
-            }}
+            className="space-y-2 text-[12px] leading-relaxed"
+            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.65 }}
           >
             <p>Aceptamos cambios dentro de los 7 días posteriores a la recepción del pedido.</p>
             <p>El producto debe estar sin uso, con etiquetas y en su empaque original.</p>
             <p>
-              Para iniciar un cambio escribinos a{" "}
+              Para iniciar un cambio escríbenos a{" "}
               <a href="mailto:hola@theia.mx" style={{ color: "var(--accent-2)" }}>
                 hola@theia.mx
               </a>{" "}
               con tu número de pedido.
             </p>
           </div>
-        </details>
+        </Accordion>
 
       </div>
     </div>

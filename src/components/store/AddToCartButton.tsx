@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useCartStore } from "@/store/cart"
 import type { Product } from "@/types"
 
-// Maps Shein/CJ color name strings to CSS color values for the color circles
 const COLOR_MAP: Record<string, string> = {
   negro: "#111111", black: "#111111",
   blanco: "#f5f5f5", white: "#f5f5f5",
@@ -25,8 +24,7 @@ const COLOR_MAP: Record<string, string> = {
 }
 
 function colorToCss(name: string): string {
-  const key = name.toLowerCase().trim()
-  return COLOR_MAP[key] ?? "#b2bec3"
+  return COLOR_MAP[name.toLowerCase().trim()] ?? "#b2bec3"
 }
 
 function isLightColor(css: string): boolean {
@@ -39,7 +37,6 @@ function isLightColor(css: string): boolean {
 
 interface Props {
   product: Product
-  /** Called when a color is selected — passes color name and its index in product.colors */
   onColorChange?: (color: string, colorIndex: number) => void
 }
 
@@ -80,7 +77,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
       {/* Size selector */}
       {hasSizes && (
         <div>
-          <div className="flex items-baseline justify-between mb-2">
+          <div className="flex items-baseline justify-between mb-3">
             <p
               className="text-[11px] uppercase tracking-[0.15em]"
               style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.55 }}
@@ -103,9 +100,11 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
                 <button
                   key={size}
                   onClick={() => { setSelectedSize(size); setSizeError(false) }}
-                  className="px-3.5 py-1.5 text-[11px] uppercase tracking-wide transition-all duration-150"
+                  className="px-4 text-[11px] uppercase tracking-wide transition-all duration-150 flex items-center justify-center"
                   style={{
                     fontFamily: "var(--font-space-mono)",
+                    minHeight: "44px",
+                    minWidth: "44px",
                     border: `1px solid ${selected ? "var(--ink)" : "rgba(26,26,26,0.2)"}`,
                     background: selected ? "var(--ink)" : "transparent",
                     color: selected ? "var(--bg)" : "var(--ink)",
@@ -122,7 +121,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
               className="text-[11px] mt-2"
               style={{ fontFamily: "var(--font-space-mono)", color: "#d63031" }}
             >
-              Seleccioná una talla para continuar
+              Selecciona una talla para continuar
             </p>
           )}
         </div>
@@ -131,7 +130,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
       {/* Color selector */}
       {hasColors && (
         <div>
-          <div className="flex items-baseline justify-between mb-2">
+          <div className="flex items-baseline justify-between mb-3">
             <p
               className="text-[11px] uppercase tracking-[0.15em]"
               style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.55 }}
@@ -147,7 +146,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
               </span>
             )}
           </div>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-3">
             {product.colors.map((color) => {
               const css = colorToCss(color)
               const light = isLightColor(css)
@@ -157,28 +156,43 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
                   key={color}
                   onClick={() => handleColorSelect(color)}
                   title={color}
-                  className="w-7 h-7 rounded-full transition-all duration-150 flex items-center justify-center"
-                  style={{
-                    background: css,
-                    border: light ? "1px solid rgba(26,26,26,0.2)" : "1px solid transparent",
-                    boxShadow: selected
-                      ? `0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink)`
-                      : "none",
-                    transform: selected ? "scale(1.15)" : "scale(1)",
-                  }}
                   aria-label={color}
                   aria-pressed={selected}
-                />
+                  className="flex items-center justify-center transition-all duration-150"
+                  style={{
+                    width: "44px",
+                    height: "44px",
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "block",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      background: css,
+                      border: light ? "1px solid rgba(26,26,26,0.2)" : "1px solid transparent",
+                      boxShadow: selected
+                        ? `0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink)`
+                        : "none",
+                      transform: selected ? "scale(1.1)" : "scale(1)",
+                      transition: "transform 150ms, box-shadow 150ms",
+                    }}
+                  />
+                </button>
               )
             })}
           </div>
         </div>
       )}
 
-      {/* Add to cart button */}
+      {/* Add to cart */}
       <button
         onClick={handleAdd}
-        className="w-full py-4 text-[11px] uppercase tracking-[0.2em] transition-all duration-300 relative overflow-hidden"
+        className="w-full py-4 text-[11px] uppercase tracking-[0.2em] transition-all duration-300"
         style={{
           fontFamily: "var(--font-space-mono)",
           background: added ? "var(--accent)" : "var(--ink)",

@@ -76,14 +76,14 @@ export default async function ProductPage({ params }: Props) {
           className="text-[10px] uppercase tracking-[0.2em] mb-8 flex items-center gap-2"
           style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
         >
-          <Link href="/productos" className="hover:opacity-100 transition-opacity">
+          <Link href="/coleccion" className="hover:opacity-100 transition-opacity">
             Colección
           </Link>
           {product.category && (
             <>
               <span>/</span>
               <Link
-                href={`/productos?categoria=${encodeURIComponent(product.category)}`}
+                href={`/${product.category === "Jerseys" ? "jerseys" : `coleccion?categoria=${encodeURIComponent(product.category)}`}`}
                 className="hover:opacity-100 transition-opacity"
               >
                 {product.category}
@@ -117,7 +117,7 @@ export default async function ProductPage({ params }: Props) {
               </h2>
               {product.category && (
                 <Link
-                  href={`/productos?categoria=${encodeURIComponent(product.category)}`}
+                  href={`/${product.category === "Jerseys" ? "jerseys" : `coleccion?categoria=${encodeURIComponent(product.category)}`}`}
                   className="text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-100"
                   style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
                 >
