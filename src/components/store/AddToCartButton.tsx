@@ -41,27 +41,34 @@ interface Props {
 }
 
 export default function AddToCartButton({ product, onColorChange }: Props) {
+  const sizes = product.sizes ?? []
+  const colors = product.colors ?? []
+
+  // Diagnostic log — remove once confirmed working
+  console.log("[AddToCartButton] sizes:", sizes, "colors:", colors, "id:", product.id)
+
   const [selectedSize, setSelectedSize] = useState<string>(
-    product.sizes?.length === 1 ? product.sizes[0] : ""
+    sizes.length === 1 ? sizes[0] : ""
   )
   const [selectedColor, setSelectedColor] = useState<string>(
-    product.colors?.length === 1 ? product.colors[0] : ""
+    colors.length === 1 ? colors[0] : ""
   )
   const [added, setAdded] = useState(false)
   const [sizeError, setSizeError] = useState(false)
   const addItem = useCartStore((s) => s.addItem)
 
-  const hasSizes = product.sizes && product.sizes.length > 0
-  const hasColors = product.colors && product.colors.length > 0
+  const hasSizes = sizes.length > 0
+  const hasColors = colors.length > 0
+  const needsSizeSelection = hasSizes && !selectedSize
 
   function handleColorSelect(color: string) {
     setSelectedColor(color)
-    const idx = product.colors?.indexOf(color) ?? -1
+    const idx = colors.indexOf(color)
     if (idx !== -1) onColorChange?.(color, idx)
   }
 
   function handleAdd() {
-    if (hasSizes && !selectedSize) {
+    if (needsSizeSelection) {
       setSizeError(true)
       setTimeout(() => setSizeError(false), 2500)
       return
@@ -74,7 +81,61 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
   return (
     <div className="space-y-5">
 
-      {/* Size selector */}
+      {/* ── 1. Color selector (before size) ── */}
+      {hasColors && (
+        <div>
+          <div className="flex items-baseline justify-between mb-3">
+            <p
+              className="text-[11px] uppercase tracking-[0.15em]"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.55 }}
+            >
+              Color
+            </p>
+            {selectedColor && (
+              <span
+                className="text-[11px]"
+                style={{ fontFamily: "var(--font-space-mono)", color: "var(--accent-2)" }}
+              >
+                {selectedColor}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {colors.map((color) => {
+              const css = colorToCss(color)
+              const light = isLightColor(css)
+              const selected = selectedColor === color
+              return (
+                <button
+                  key={color}
+                  onClick={() => handleColorSelect(color)}
+                  title={color}
+                  aria-label={color}
+                  aria-pressed={selected}
+                  className="flex items-center justify-center transition-all duration-150"
+                  style={{ width: "44px", height: "44px", background: "transparent", border: "none", padding: 0 }}
+                >
+                  <span
+                    style={{
+                      display: "block",
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      background: css,
+                      border: light ? "1px solid rgba(26,26,26,0.2)" : "1px solid transparent",
+                      boxShadow: selected ? `0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink)` : "none",
+                      transform: selected ? "scale(1.1)" : "scale(1)",
+                      transition: "transform 150ms, box-shadow 150ms",
+                    }}
+                  />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── 2. Size selector ── */}
       {hasSizes && (
         <div>
           <div className="flex items-baseline justify-between mb-3">
@@ -94,7 +155,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            {product.sizes.map((size) => {
+            {sizes.map((size) => {
               const selected = selectedSize === size
               const stockCount = product.size_stock?.[size]
               const outOfStock = product.size_stock != null && (stockCount ?? 0) === 0
@@ -104,18 +165,12 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
                   onClick={() => { if (!outOfStock) { setSelectedSize(size); setSizeError(false) } }}
                   disabled={outOfStock}
                   title={outOfStock ? "Sin stock" : undefined}
-                  className="px-4 text-[11px] uppercase tracking-wide transition-all duration-150 flex items-center justify-center relative"
+                  className="px-4 text-[11px] uppercase tracking-wide transition-all duration-150 flex items-center justify-center"
                   style={{
                     fontFamily: "var(--font-space-mono)",
                     minHeight: "44px",
                     minWidth: "44px",
-                    border: `1px solid ${
-                      outOfStock
-                        ? "rgba(26,26,26,0.1)"
-                        : selected
-                        ? "var(--ink)"
-                        : "rgba(26,26,26,0.2)"
-                    }`,
+                    border: `1px solid ${outOfStock ? "rgba(26,26,26,0.1)" : selected ? "var(--ink)" : "rgba(26,26,26,0.2)"}`,
                     background: outOfStock ? "transparent" : selected ? "var(--ink)" : "transparent",
                     color: outOfStock ? "rgba(26,26,26,0.25)" : selected ? "var(--bg)" : "var(--ink)",
                     opacity: outOfStock ? 0.5 : selected ? 1 : 0.7,
@@ -139,69 +194,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
         </div>
       )}
 
-      {/* Color selector */}
-      {hasColors && (
-        <div>
-          <div className="flex items-baseline justify-between mb-3">
-            <p
-              className="text-[11px] uppercase tracking-[0.15em]"
-              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.55 }}
-            >
-              Color
-            </p>
-            {selectedColor && (
-              <span
-                className="text-[11px]"
-                style={{ fontFamily: "var(--font-space-mono)", color: "var(--accent-2)" }}
-              >
-                {selectedColor}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {product.colors.map((color) => {
-              const css = colorToCss(color)
-              const light = isLightColor(css)
-              const selected = selectedColor === color
-              return (
-                <button
-                  key={color}
-                  onClick={() => handleColorSelect(color)}
-                  title={color}
-                  aria-label={color}
-                  aria-pressed={selected}
-                  className="flex items-center justify-center transition-all duration-150"
-                  style={{
-                    width: "44px",
-                    height: "44px",
-                    background: "transparent",
-                    border: "none",
-                    padding: 0,
-                  }}
-                >
-                  <span
-                    style={{
-                      display: "block",
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "50%",
-                      background: css,
-                      border: light ? "1px solid rgba(26,26,26,0.2)" : "1px solid transparent",
-                      boxShadow: selected
-                        ? `0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink)`
-                        : "none",
-                      transform: selected ? "scale(1.1)" : "scale(1)",
-                      transition: "transform 150ms, box-shadow 150ms",
-                    }}
-                  />
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Add to cart */}
+      {/* ── 3. Add to cart ── */}
       <button
         onClick={handleAdd}
         className="w-full py-4 text-[11px] uppercase tracking-[0.2em] transition-all duration-300"
@@ -209,9 +202,14 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
           fontFamily: "var(--font-space-mono)",
           background: added ? "var(--accent)" : "var(--ink)",
           color: "var(--bg)",
+          opacity: needsSizeSelection ? 0.6 : 1,
         }}
       >
-        {added ? "¡Agregado al carrito!" : "Agregar al carrito"}
+        {added
+          ? "¡Agregado al carrito!"
+          : needsSizeSelection
+          ? "Selecciona una talla"
+          : "Agregar al carrito"}
       </button>
 
     </div>

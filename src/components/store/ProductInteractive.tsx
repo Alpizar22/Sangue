@@ -12,11 +12,8 @@ interface Props {
 const MATERIAL_KEYWORDS = /material|fabric|polyester|cotton|composition|spandex|elastane|nylon|linen|silk|rayon|viscose|acrylic|wool|lycra|chiffon|satin|jersey/i
 
 function extractMaterial(desc: string): string | null {
-  const sentences = desc.split(/[.\n;]+/)
-  for (const s of sentences) {
-    if (MATERIAL_KEYWORDS.test(s) && s.trim().length > 0) {
-      return s.trim()
-    }
+  for (const s of desc.split(/[.\n;]+/)) {
+    if (MATERIAL_KEYWORDS.test(s) && s.trim().length > 0) return s.trim()
   }
   return null
 }
@@ -24,13 +21,13 @@ function extractMaterial(desc: string): string | null {
 const WHATSAPP = "https://wa.me/5213312345678"
 
 const SIZE_GUIDE = [
-  { talla: "XS", busto: "82",  cintura: "64",  cadera: "87"  },
-  { talla: "S",  busto: "86",  cintura: "68",  cadera: "91"  },
-  { talla: "M",  busto: "90",  cintura: "72",  cadera: "95"  },
-  { talla: "L",  busto: "94",  cintura: "76",  cadera: "99"  },
-  { talla: "XL", busto: "98",  cintura: "80",  cadera: "103" },
-  { talla: "XXL",busto: "102", cintura: "84",  cadera: "107" },
-  { talla: "3XL",busto: "106", cintura: "88",  cadera: "111" },
+  { talla: "XS",  busto: "82",  cintura: "64", cadera: "87"  },
+  { talla: "S",   busto: "86",  cintura: "68", cadera: "91"  },
+  { talla: "M",   busto: "90",  cintura: "72", cadera: "95"  },
+  { talla: "L",   busto: "94",  cintura: "76", cadera: "99"  },
+  { talla: "XL",  busto: "98",  cintura: "80", cadera: "103" },
+  { talla: "XXL", busto: "102", cintura: "84", cadera: "107" },
+  { talla: "3XL", busto: "106", cintura: "88", cadera: "111" },
 ]
 
 function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
@@ -55,10 +52,7 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
         <span>{title}</span>
         <span className="text-base leading-none" style={{ opacity: 0.5 }}>+</span>
       </summary>
-      <div
-        className="px-4 py-4"
-        style={{ background: "var(--bg)" }}
-      >
+      <div className="px-4 py-4" style={{ background: "var(--bg)" }}>
         {children}
       </div>
     </details>
@@ -92,6 +86,7 @@ export default function ProductInteractive({ product }: Props) {
       {/* ── RIGHT: Info + actions ─────────────────────────────── */}
       <div className="space-y-5">
 
+        {/* 2. Categoría */}
         {product.category && (
           <p
             className="text-[10px] uppercase tracking-[0.25em]"
@@ -101,6 +96,7 @@ export default function ProductInteractive({ product }: Props) {
           </p>
         )}
 
+        {/* 3. Título */}
         <h1
           className="text-2xl md:text-3xl italic leading-tight"
           style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
@@ -108,6 +104,7 @@ export default function ProductInteractive({ product }: Props) {
           {product.title}
         </h1>
 
+        {/* 4. Precio */}
         <p
           className="text-3xl"
           style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
@@ -117,12 +114,51 @@ export default function ProductInteractive({ product }: Props) {
 
         <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
 
-        {/* Size + color selectors + add to cart */}
+        {/* 5+6+7. Color → Talla → Botón (order enforced inside AddToCartButton) */}
         <AddToCartButton product={product} onColorChange={handleColorChange} />
 
         <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
 
-        {/* Detalles del producto */}
+        {/* 8. Envío y entrega */}
+        <div
+          className="rounded-xl p-4 space-y-2"
+          style={{ background: "var(--paper)", border: "1px solid rgba(26,26,26,0.08)" }}
+        >
+          <p
+            className="text-[10px] uppercase tracking-[0.2em] mb-3"
+            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+          >
+            Envío y entrega
+          </p>
+          <div className="flex items-start gap-3">
+            <span className="text-base mt-0.5">📦</span>
+            <div>
+              <p
+                className="text-[12px] font-medium mb-0.5"
+                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+              >
+                Envío estándar · 7–15 días hábiles
+              </p>
+              <p
+                className="text-[11px]"
+                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+              >
+                A toda la República Mexicana · Seguimiento incluido
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="text-base mt-0.5">🔒</span>
+            <p
+              className="text-[11px]"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+            >
+              Pago seguro con MercadoPago · Tarjeta, transferencia o efectivo
+            </p>
+          </div>
+        </div>
+
+        {/* 9. Detalles del producto */}
         <Accordion title="Detalles del producto">
           <div className="space-y-3">
             {material && (
@@ -142,10 +178,7 @@ export default function ProductInteractive({ product }: Props) {
               </div>
             )}
             {desc ? (
-              <p
-                className="text-[12px] leading-relaxed"
-                style={{ color: "var(--ink)", opacity: 0.65 }}
-              >
+              <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink)", opacity: 0.65 }}>
                 {desc}
               </p>
             ) : (
@@ -167,7 +200,7 @@ export default function ProductInteractive({ product }: Props) {
           </div>
         </Accordion>
 
-        {/* Guía de tallas */}
+        {/* 10. Guía de tallas */}
         <Accordion title="Guía de tallas">
           <div className="overflow-x-auto">
             <table
@@ -207,46 +240,7 @@ export default function ProductInteractive({ product }: Props) {
           </div>
         </Accordion>
 
-        {/* Envío */}
-        <div
-          className="rounded-xl p-4 space-y-2"
-          style={{ background: "var(--paper)", border: "1px solid rgba(26,26,26,0.08)" }}
-        >
-          <p
-            className="text-[10px] uppercase tracking-[0.2em] mb-3"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
-          >
-            Envío y entrega
-          </p>
-          <div className="flex items-start gap-3">
-            <span className="text-base mt-0.5">📦</span>
-            <div>
-              <p
-                className="text-[12px] font-medium mb-0.5"
-                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
-              >
-                Envío estándar · 7–15 días hábiles
-              </p>
-              <p
-                className="text-[11px]"
-                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
-              >
-                A toda la República Mexicana · Seguimiento incluido
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-base mt-0.5">🔒</span>
-            <p
-              className="text-[11px]"
-              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
-            >
-              Pago seguro con MercadoPago · Tarjeta, transferencia o efectivo
-            </p>
-          </div>
-        </div>
-
-        {/* Devoluciones */}
+        {/* 11. Política de devoluciones */}
         <Accordion title="Política de devoluciones">
           <div
             className="space-y-2 text-[12px] leading-relaxed"
