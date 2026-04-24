@@ -75,16 +75,16 @@ export default async function ProductsPage({ searchParams }: { searchParams: Sea
           </div>
         </div>
 
-        {/* Layout: sidebar + grid */}
-        <div className="flex gap-10 items-start">
+        {/* Layout: sidebar (desktop) arriba (mobile) + grid */}
+        <div className="flex flex-col gap-0 lg:flex-row lg:gap-10 lg:items-start">
 
-          {/* FilterPanel necesita Suspense por useSearchParams */}
+          {/* FilterPanel: desktop → aside fija izquierda, mobile → barra arriba */}
           <Suspense fallback={<div className="hidden lg:block w-44 flex-shrink-0" />}>
             <FilterPanel />
           </Suspense>
 
-          {/* Grid de productos */}
-          <div className="flex-1 min-w-0">
+          {/* Grid de productos: full-width mobile, flex-1 desktop */}
+          <div className="w-full lg:flex-1 lg:min-w-0">
             <ProductGrid products={(products ?? []) as Product[]} />
           </div>
 

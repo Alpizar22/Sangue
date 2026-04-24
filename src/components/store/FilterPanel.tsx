@@ -187,8 +187,8 @@ export default function FilterPanel() {
         <FilterContent />
       </aside>
 
-      {/* ── Mobile top bar ────────────────────────────── */}
-      <div className="lg:hidden flex items-center justify-between mb-5">
+      {/* ── Mobile top bar — w-full so it never shrinks as a flex-item ── */}
+      <div className="lg:hidden w-full flex items-center justify-between mb-5">
         <button
           onClick={() => setDrawerOpen(true)}
           className="flex items-center gap-2 text-[10px] uppercase tracking-[0.15em] px-4 py-2 transition-colors"
