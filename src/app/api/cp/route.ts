@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 
 export const runtime = "edge"
 
-interface CopomexResponse {
-  error: boolean
-  response: {
-    asentamiento: string[]
-    municipio: string
-    estado: string
-    ciudad: string
-  }
+interface SepomexResponse {
+  zip_codes: {
+    d_asenta: string
+    D_mnpio: string
+    d_estado: string
+    d_ciudad: string
+  }[]
 }
 
 export async function GET(req: NextRequest) {
@@ -20,22 +19,23 @@ export async function GET(req: NextRequest) {
 
   try {
     const res = await fetch(
-      `https://api.copomex.com/query/info_cp/${cp}?token=pruebas`,
+      `https://sepomex.icalialabs.com/api/v1/zip_codes?zip_code=${cp}`,
       { next: { revalidate: 86400 } }
     )
     if (!res.ok) {
       return NextResponse.json({ error: "CP no encontrado" }, { status: 404 })
     }
-    const data: CopomexResponse = await res.json()
-    if (data.error) {
+    const data: SepomexResponse = await res.json()
+    if (!data.zip_codes?.length) {
       return NextResponse.json({ error: "CP no encontrado" }, { status: 404 })
     }
-    const r = data.response
+    const first = data.zip_codes[0]
+    const colonias = [...new Set(data.zip_codes.map(z => z.d_asenta))].sort()
     return NextResponse.json({
-      municipio: r.municipio,
-      estado: r.estado,
-      ciudad: r.ciudad || r.municipio,
-      colonias: r.asentamiento ?? [],
+      municipio: first.D_mnpio,
+      estado: first.d_estado,
+      ciudad: first.d_ciudad || first.D_mnpio,
+      colonias,
     })
   } catch {
     return NextResponse.json({ error: "Error al consultar CP" }, { status: 500 })

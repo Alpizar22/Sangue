@@ -36,6 +36,38 @@ function fieldClass(err?: string) {
   return err ? ERROR_STYLE : FIELD_STYLE
 }
 
+function Field({
+  name, label, type = "text", required = true, placeholder = "",
+  value, error, onChange,
+}: {
+  name: keyof FormState
+  label: string
+  type?: string
+  required?: boolean
+  placeholder?: string
+  value: string
+  error?: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      <input
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        data-error={!!error || undefined}
+        className={fieldClass(error)}
+      />
+      {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
+    </div>
+  )
+}
+
 const SHIPPING_COST = 155
 
 export default function CheckoutPage() {
@@ -161,37 +193,6 @@ export default function CheckoutPage() {
 
   const inputClass = (name: keyof FormState) => fieldClass(errors[name])
 
-  function Field({
-    name, label, type = "text", required = true, placeholder = "", half = false,
-  }: {
-    name: keyof FormState
-    label: string
-    type?: string
-    required?: boolean
-    placeholder?: string
-    half?: boolean
-  }) {
-    return (
-      <div className={half ? "" : "w-full"}>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          {label}{required && <span className="text-red-500 ml-0.5">*</span>}
-        </label>
-        <input
-          name={name}
-          type={type}
-          value={form[name]}
-          onChange={handleChange}
-          placeholder={placeholder}
-          data-error={!!errors[name] || undefined}
-          className={inputClass(name)}
-        />
-        {errors[name] && (
-          <p className="text-xs text-red-500 mt-0.5">{errors[name]}</p>
-        )}
-      </div>
-    )
-  }
-
   return (
     <div style={{ background: "var(--bg)", minHeight: "60vh" }}>
       <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
@@ -219,10 +220,10 @@ export default function CheckoutPage() {
               </h2>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field name="first_name" label="Nombre" placeholder="María" />
-                <Field name="last_name" label="Apellido" placeholder="García" />
+                <Field name="first_name" label="Nombre" placeholder="María" value={form.first_name} error={errors.first_name} onChange={handleChange} />
+                <Field name="last_name" label="Apellido" placeholder="García" value={form.last_name} error={errors.last_name} onChange={handleChange} />
               </div>
-              <Field name="email" label="Email" type="email" placeholder="maria@correo.com" />
+              <Field name="email" label="Email" type="email" placeholder="maria@correo.com" value={form.email} error={errors.email} onChange={handleChange} />
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
                   Teléfono<span className="text-red-500 ml-0.5">*</span>
@@ -348,11 +349,11 @@ export default function CheckoutPage() {
                 {errors.colonia && <p className="text-xs text-red-500 mt-0.5">{errors.colonia}</p>}
               </div>
 
-              <Field name="street" label="Calle" placeholder="Av. Juárez" />
+              <Field name="street" label="Calle" placeholder="Av. Juárez" value={form.street} error={errors.street} onChange={handleChange} />
 
               <div className="grid grid-cols-2 gap-3">
-                <Field name="ext_number" label="Número exterior" placeholder="123" />
-                <Field name="int_number" label="Número interior" placeholder="Depto. 4B" required={false} />
+                <Field name="ext_number" label="Número exterior" placeholder="123" value={form.ext_number} error={errors.ext_number} onChange={handleChange} />
+                <Field name="int_number" label="Número interior" placeholder="Depto. 4B" required={false} value={form.int_number} error={errors.int_number} onChange={handleChange} />
               </div>
             </section>
 
