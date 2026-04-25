@@ -38,7 +38,7 @@ function fieldClass(err?: string) {
 
 function Field({
   name, label, type = "text", required = true, placeholder = "",
-  value, error, onChange,
+  value, error, onChange, inputMode, autoComplete = "off", autoCapitalize = "off",
 }: {
   name: keyof FormState
   label: string
@@ -48,6 +48,9 @@ function Field({
   value: string
   error?: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
+  autoComplete?: string
+  autoCapitalize?: string
 }) {
   return (
     <div>
@@ -62,6 +65,11 @@ function Field({
         placeholder={placeholder}
         data-error={!!error || undefined}
         className={fieldClass(error)}
+        inputMode={inputMode}
+        autoComplete={autoComplete}
+        autoCapitalize={autoCapitalize}
+        autoCorrect="off"
+        spellCheck={false}
       />
       {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
     </div>
@@ -93,12 +101,11 @@ export default function CheckoutPage() {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target
-    setForm(f => ({ ...f, [name]: value }))
-    if (errors[name]) setErrors(er => ({ ...er, [name]: "" }))
 
     if (name === "postal_code") {
       const v = value.replace(/\D/g, "").slice(0, 5)
       setForm(f => ({ ...f, postal_code: v }))
+      if (errors.postal_code) setErrors(er => ({ ...er, postal_code: "" }))
       if (cpTimer.current) clearTimeout(cpTimer.current)
       if (v.length === 5) {
         cpTimer.current = setTimeout(() => lookupCP(v), 400)
@@ -106,7 +113,11 @@ export default function CheckoutPage() {
         setColonias([])
         setForm(f => ({ ...f, city: "", state: "", colonia: "" }))
       }
+      return
     }
+
+    setForm(f => ({ ...f, [name]: value }))
+    if (errors[name]) setErrors(er => ({ ...er, [name]: "" }))
   }
 
   async function lookupCP(cp: string) {
@@ -220,10 +231,10 @@ export default function CheckoutPage() {
               </h2>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field name="first_name" label="Nombre" placeholder="María" value={form.first_name} error={errors.first_name} onChange={handleChange} />
-                <Field name="last_name" label="Apellido" placeholder="García" value={form.last_name} error={errors.last_name} onChange={handleChange} />
+                <Field name="first_name" label="Nombre" placeholder="María" value={form.first_name} error={errors.first_name} onChange={handleChange} autoComplete="given-name" autoCapitalize="words" />
+                <Field name="last_name" label="Apellido" placeholder="García" value={form.last_name} error={errors.last_name} onChange={handleChange} autoComplete="family-name" autoCapitalize="words" />
               </div>
-              <Field name="email" label="Email" type="email" placeholder="maria@correo.com" value={form.email} error={errors.email} onChange={handleChange} />
+              <Field name="email" label="Email" type="email" placeholder="maria@correo.com" value={form.email} error={errors.email} onChange={handleChange} autoComplete="email" />
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
                   Teléfono<span className="text-red-500 ml-0.5">*</span>
@@ -349,11 +360,11 @@ export default function CheckoutPage() {
                 {errors.colonia && <p className="text-xs text-red-500 mt-0.5">{errors.colonia}</p>}
               </div>
 
-              <Field name="street" label="Calle" placeholder="Av. Juárez" value={form.street} error={errors.street} onChange={handleChange} />
+              <Field name="street" label="Calle" placeholder="Av. Juárez" value={form.street} error={errors.street} onChange={handleChange} autoComplete="street-address" autoCapitalize="words" />
 
               <div className="grid grid-cols-2 gap-3">
-                <Field name="ext_number" label="Número exterior" placeholder="123" value={form.ext_number} error={errors.ext_number} onChange={handleChange} />
-                <Field name="int_number" label="Número interior" placeholder="Depto. 4B" required={false} value={form.int_number} error={errors.int_number} onChange={handleChange} />
+                <Field name="ext_number" label="Número exterior" placeholder="123" value={form.ext_number} error={errors.ext_number} onChange={handleChange} inputMode="text" autoComplete="address-line2" />
+                <Field name="int_number" label="Número interior" placeholder="Depto. 4B" required={false} value={form.int_number} error={errors.int_number} onChange={handleChange} autoComplete="address-line2" />
               </div>
             </section>
 
