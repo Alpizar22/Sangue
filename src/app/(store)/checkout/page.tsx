@@ -363,8 +363,8 @@ export default function CheckoutPage() {
               <Field name="street" label="Calle" placeholder="Av. Juárez" value={form.street} error={errors.street} onChange={handleChange} autoComplete="street-address" autoCapitalize="words" />
 
               <div className="grid grid-cols-2 gap-3">
-                <Field name="ext_number" label="Número exterior" placeholder="123" value={form.ext_number} error={errors.ext_number} onChange={handleChange} inputMode="text" autoComplete="address-line2" />
-                <Field name="int_number" label="Número interior" placeholder="Depto. 4B" required={false} value={form.int_number} error={errors.int_number} onChange={handleChange} autoComplete="address-line2" />
+                <Field name="ext_number" label="Número exterior" placeholder="123" value={form.ext_number} error={errors.ext_number} onChange={handleChange} autoComplete="off" />
+                <Field name="int_number" label="Número interior" placeholder="Depto. 4B" required={false} value={form.int_number} error={errors.int_number} onChange={handleChange} autoComplete="off" />
               </div>
             </section>
 

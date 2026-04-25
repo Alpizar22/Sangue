@@ -5,7 +5,7 @@ export const runtime = "edge"
 interface SepomexResponse {
   zip_codes: {
     d_asenta: string
-    D_mnpio: string
+    d_mnpio: string
     d_estado: string
     d_ciudad: string
   }[]
@@ -32,9 +32,9 @@ export async function GET(req: NextRequest) {
     const first = data.zip_codes[0]
     const colonias = [...new Set(data.zip_codes.map(z => z.d_asenta))].sort()
     return NextResponse.json({
-      municipio: first.D_mnpio,
+      municipio: first.d_mnpio,
       estado: first.d_estado,
-      ciudad: first.d_ciudad || first.D_mnpio,
+      ciudad: first.d_ciudad || first.d_mnpio,
       colonias,
     })
   } catch {
