@@ -87,7 +87,7 @@ export default function CheckoutPage() {
   const [colonias, setColonias] = useState<string[]>([])
   const cpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const [coloniaIsCustom, setColoniaIsCustom] = useState(false)
+  const [coloniaInput, setColoniaInput] = useState("")
 
   const [form, setForm] = useState<FormState>({
     first_name: "", last_name: "", email: "", phone: "",
@@ -113,7 +113,7 @@ export default function CheckoutPage() {
         cpTimer.current = setTimeout(() => lookupCP(v), 400)
       } else {
         setColonias([])
-        setColoniaIsCustom(false)
+        setColoniaInput("")
         setForm(f => ({ ...f, city: "", state: "", colonia: "" }))
       }
       return
@@ -134,7 +134,7 @@ export default function CheckoutPage() {
       const data: CPData = await res.json()
       setForm(f => ({ ...f, city: data.ciudad || data.municipio, state: data.estado, colonia: "" }))
       setColonias(data.colonias ?? [])
-      setColoniaIsCustom(false)
+      setColoniaInput("")
       setErrors(er => ({ ...er, postal_code: "" }))
     } catch {
       // If CP lookup fails, let user type manually — not a hard error
@@ -153,7 +153,8 @@ export default function CheckoutPage() {
       e.phone = "Teléfono: 10 dígitos"
     if (!form.street.trim()) e.street = "Requerido"
     if (!form.ext_number.trim()) e.ext_number = "Requerido"
-    if (!form.colonia.trim()) e.colonia = "Requerido"
+    const coloniaFinal = form.colonia === "__otra__" ? coloniaInput : form.colonia
+    if (!coloniaFinal.trim()) e.colonia = "Requerido"
     if (!/^\d{5}$/.test(form.postal_code)) e.postal_code = "5 dígitos"
     if (!form.city.trim()) e.city = "Requerido"
     if (!form.state.trim()) e.state = "Requerido"
@@ -186,7 +187,7 @@ export default function CheckoutPage() {
           street: form.street.trim(),
           number: form.ext_number.trim(),
           floor: form.int_number || undefined,
-          colonia: form.colonia.trim(),
+          colonia: (form.colonia === "__otra__" ? coloniaInput : form.colonia).trim(),
           city: form.city.trim(),
           province: form.state.trim(),
           postal_code: form.postal_code,
@@ -337,28 +338,38 @@ export default function CheckoutPage() {
                   onChange={(e) => {
                     const v = e.target.value
                     if (v === "__otra__") {
-                      setColoniaIsCustom(true)
-                      setForm(f => ({ ...f, colonia: "" }))
+                      setColoniaInput("")
+                      setForm(f => ({ ...f, colonia: "__otra__" }))
                     } else {
-                      setColoniaIsCustom(false)
+                      setColoniaInput("")
                       setForm(f => ({ ...f, colonia: v }))
                       if (errors.colonia) setErrors(er => ({ ...er, colonia: "" }))
                     }
                   }}
-                  className={`${inputClass("colonia")}${colonias.length === 0 || coloniaIsCustom ? " hidden" : ""}`}
-                  tabIndex={colonias.length === 0 || coloniaIsCustom ? -1 : undefined}
+                  className={`${inputClass("colonia")}${colonias.length === 0 || form.colonia === "__otra__" ? " hidden" : ""}`}
+                  tabIndex={colonias.length === 0 || form.colonia === "__otra__" ? -1 : undefined}
                 >
                   <option value="">— Selecciona colonia —</option>
                   {colonias.map(c => <option key={c} value={c}>{c}</option>)}
                   <option value="__otra__">Otra (escribir manualmente)</option>
                 </select>
+                {/* Input visible cuando no hay colonias (sin CP) O cuando usuario eligió "Otra" */}
                 <input
                   name="colonia"
-                  value={form.colonia}
-                  onChange={handleChange}
-                  placeholder={coloniaIsCustom ? "Escribe tu colonia" : "Nombre de tu colonia"}
-                  className={`${inputClass("colonia")}${colonias.length > 0 && !coloniaIsCustom ? " hidden" : ""}`}
-                  tabIndex={colonias.length > 0 && !coloniaIsCustom ? -1 : undefined}
+                  value={colonias.length === 0 ? form.colonia : coloniaInput}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (colonias.length === 0) {
+                      setForm(f => ({ ...f, colonia: v }))
+                      if (errors.colonia) setErrors(er => ({ ...er, colonia: "" }))
+                    } else {
+                      setColoniaInput(v)
+                      if (errors.colonia) setErrors(er => ({ ...er, colonia: "" }))
+                    }
+                  }}
+                  placeholder={form.colonia === "__otra__" ? "Escribe tu colonia" : "Nombre de tu colonia"}
+                  className={`${inputClass("colonia")}${colonias.length > 0 && form.colonia !== "__otra__" ? " hidden" : ""}`}
+                  tabIndex={colonias.length > 0 && form.colonia !== "__otra__" ? -1 : undefined}
                 />
                 {errors.colonia && <p className="text-xs text-red-500 mt-0.5">{errors.colonia}</p>}
               </div>
