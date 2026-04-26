@@ -34,7 +34,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="es"
       className={`${instrumentSerif.variable} ${spaceMono.variable} ${caveat.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <span
+          className="fixed bottom-3 right-3 z-50 text-xs text-gray-400 opacity-40 pointer-events-none select-none"
+          style={{ fontFamily: "monospace" }}
+        >
+          By Nasus
+        </span>
+      </body>
     </html>
   )
 }

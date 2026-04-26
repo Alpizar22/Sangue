@@ -87,6 +87,8 @@ export default function CheckoutPage() {
   const [colonias, setColonias] = useState<string[]>([])
   const cpTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const [coloniaIsCustom, setColoniaIsCustom] = useState(false)
+
   const [form, setForm] = useState<FormState>({
     first_name: "", last_name: "", email: "", phone: "",
     street: "", ext_number: "", int_number: "",
@@ -111,6 +113,7 @@ export default function CheckoutPage() {
         cpTimer.current = setTimeout(() => lookupCP(v), 400)
       } else {
         setColonias([])
+        setColoniaIsCustom(false)
         setForm(f => ({ ...f, city: "", state: "", colonia: "" }))
       }
       return
@@ -131,6 +134,7 @@ export default function CheckoutPage() {
       const data: CPData = await res.json()
       setForm(f => ({ ...f, city: data.ciudad || data.municipio, state: data.estado, colonia: "" }))
       setColonias(data.colonias ?? [])
+      setColoniaIsCustom(false)
       setErrors(er => ({ ...er, postal_code: "" }))
     } catch {
       // If CP lookup fails, let user type manually — not a hard error
@@ -322,49 +326,74 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Colonia */}
+              {/* Colonia — ambos elementos siempre en DOM, toggle con CSS */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
                   Colonia<span className="text-red-500 ml-0.5">*</span>
                 </label>
-                {colonias.length > 0 ? (
-                  <select
-                    name="colonia"
-                    value={form.colonia}
-                    onChange={handleChange}
-                    className={inputClass("colonia")}
-                  >
-                    <option value="">— Selecciona colonia —</option>
-                    {colonias.map(c => <option key={c} value={c}>{c}</option>)}
-                    <option value="__otra__">Otra (escribir manualmente)</option>
-                  </select>
-                ) : (
-                  <input
-                    name="colonia"
-                    value={form.colonia}
-                    onChange={handleChange}
-                    placeholder="Nombre de tu colonia"
-                    className={inputClass("colonia")}
-                  />
-                )}
-                {form.colonia === "__otra__" && (
-                  <input
-                    name="colonia"
-                    value=""
-                    onChange={handleChange}
-                    placeholder="Escribe tu colonia"
-                    className={`${FIELD_STYLE} mt-2`}
-                    autoFocus
-                  />
-                )}
+                <select
+                  name="colonia"
+                  value={form.colonia}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (v === "__otra__") {
+                      setColoniaIsCustom(true)
+                      setForm(f => ({ ...f, colonia: "" }))
+                    } else {
+                      setColoniaIsCustom(false)
+                      setForm(f => ({ ...f, colonia: v }))
+                      if (errors.colonia) setErrors(er => ({ ...er, colonia: "" }))
+                    }
+                  }}
+                  className={`${inputClass("colonia")}${colonias.length === 0 || coloniaIsCustom ? " hidden" : ""}`}
+                  tabIndex={colonias.length === 0 || coloniaIsCustom ? -1 : undefined}
+                >
+                  <option value="">— Selecciona colonia —</option>
+                  {colonias.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="__otra__">Otra (escribir manualmente)</option>
+                </select>
+                <input
+                  name="colonia"
+                  value={form.colonia}
+                  onChange={handleChange}
+                  placeholder={coloniaIsCustom ? "Escribe tu colonia" : "Nombre de tu colonia"}
+                  className={`${inputClass("colonia")}${colonias.length > 0 && !coloniaIsCustom ? " hidden" : ""}`}
+                  tabIndex={colonias.length > 0 && !coloniaIsCustom ? -1 : undefined}
+                />
                 {errors.colonia && <p className="text-xs text-red-500 mt-0.5">{errors.colonia}</p>}
               </div>
 
               <Field name="street" label="Calle" placeholder="Av. Juárez" value={form.street} error={errors.street} onChange={handleChange} autoComplete="street-address" autoCapitalize="words" />
 
               <div className="grid grid-cols-2 gap-3">
-                <Field name="ext_number" label="Número exterior" placeholder="123" value={form.ext_number} error={errors.ext_number} onChange={handleChange} autoComplete="off" />
-                <Field name="int_number" label="Número interior" placeholder="Depto. 4B" required={false} value={form.int_number} error={errors.int_number} onChange={handleChange} autoComplete="off" />
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Número exterior<span className="text-red-500 ml-0.5">*</span>
+                  </label>
+                  <input
+                    name="ext_number"
+                    type="text"
+                    value={form.ext_number}
+                    onChange={handleChange}
+                    placeholder="123"
+                    className={inputClass("ext_number")}
+                  />
+                  {errors.ext_number && <p className="text-xs text-red-500 mt-0.5">{errors.ext_number}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Número interior
+                  </label>
+                  <input
+                    name="int_number"
+                    type="text"
+                    value={form.int_number}
+                    onChange={handleChange}
+                    placeholder="Depto. 4B"
+                    className={inputClass("int_number")}
+                  />
+                  {errors.int_number && <p className="text-xs text-red-500 mt-0.5">{errors.int_number}</p>}
+                </div>
               </div>
             </section>
 
