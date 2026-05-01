@@ -114,7 +114,7 @@ export default function DevolucionesPage() {
             </p>
             <div className="space-y-5">
               <Step n={1} title="Contáctanos dentro de los 7 días de recibido">
-                <p>Por WhatsApp al número que aparece en el footer o escríbenos a hola@theia.lat.</p>
+                <p>Por WhatsApp al número que aparece en el footer o escríbenos a nasusagency@gmail.com.</p>
               </Step>
               <Step n={2} title="Incluye tu número de orden y foto del problema">
                 <p>
@@ -161,12 +161,12 @@ export default function DevolucionesPage() {
                 WhatsApp (respuesta más rápida)
               </a>
               <a
-                href="mailto:hola@theia.lat?subject=Reporte%20pedido"
+                href="mailto:nasusagency@gmail.com?subject=Reporte%20pedido"
                 className="flex items-center gap-2 text-[12px] transition-opacity hover:opacity-80"
                 style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
               >
                 <span>✉</span>
-                hola@theia.lat
+                nasusagency@gmail.com
               </a>
             </div>
           </div>

@@ -2,10 +2,13 @@ import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import type { Metadata } from "next"
 import type { Product } from "@/types"
+import Link from "next/link"
 import FilterPanel, { type CategoryOption } from "@/components/store/FilterPanel"
 import ProductGrid from "@/components/store/ProductGrid"
 
 export const revalidate = 60
+
+const PAGE_SIZE = 60
 
 const MUJER_CATEGORIES: CategoryOption[] = [
   { value: "", label: "Todas" },
@@ -21,6 +24,7 @@ type SearchParams = Promise<{
   q?: string
   talla?: string
   orden?: string
+  pagina?: string
 }>
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
@@ -37,12 +41,13 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 }
 
 export default async function ColeccionPage({ searchParams }: { searchParams: SearchParams }) {
-  const { categoria, q, talla, orden } = await searchParams
+  const { categoria, q, talla, orden, pagina } = await searchParams
+  const page = Math.max(1, parseInt(pagina ?? "1", 10) || 1)
   const supabase = await createClient()
 
   let query = supabase
     .from("products")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("status", "active")
     .neq("category", "Jerseys")
 
@@ -61,10 +66,24 @@ export default async function ColeccionPage({ searchParams }: { searchParams: Se
       query = query.order("created_at", { ascending: false })
   }
 
-  const { data: products } = await query
+  const from = (page - 1) * PAGE_SIZE
+  const to = from + PAGE_SIZE - 1
+  const { data: products, count } = await query.range(from, to)
 
-  const count = (products ?? []).length
+  const totalCount = count ?? 0
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
   const heading = q ? `"${q}"` : categoria ?? "Colección"
+
+  const buildUrl = (p: number) => {
+    const params = new URLSearchParams()
+    if (categoria) params.set("categoria", categoria)
+    if (q) params.set("q", q)
+    if (talla) params.set("talla", talla)
+    if (orden) params.set("orden", orden)
+    if (p > 1) params.set("pagina", String(p))
+    const s = params.toString()
+    return `/coleccion${s ? `?${s}` : ""}`
+  }
 
   return (
     <div style={{ background: "var(--bg)", minHeight: "60vh" }}>
@@ -82,7 +101,7 @@ export default async function ColeccionPage({ searchParams }: { searchParams: Se
               className="text-[10px] uppercase tracking-[0.2em] mt-1"
               style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
             >
-              {count} {count === 1 ? "producto" : "productos"}
+              {totalCount} {totalCount === 1 ? "producto" : "productos"}
             </p>
           </div>
         </div>
@@ -94,6 +113,35 @@ export default async function ColeccionPage({ searchParams }: { searchParams: Se
 
           <div className="w-full lg:flex-1 lg:min-w-0">
             <ProductGrid products={(products ?? []) as Product[]} />
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-12">
+                {page > 1 && (
+                  <Link
+                    href={buildUrl(page - 1)}
+                    className="px-5 py-2 text-[11px] uppercase tracking-[0.15em] transition-opacity hover:opacity-70"
+                    style={{ fontFamily: "var(--font-space-mono)", border: "1px solid rgba(26,26,26,0.2)", color: "var(--ink)" }}
+                  >
+                    ← Anterior
+                  </Link>
+                )}
+                <span
+                  className="text-[11px]"
+                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+                >
+                  {page} / {totalPages}
+                </span>
+                {page < totalPages && (
+                  <Link
+                    href={buildUrl(page + 1)}
+                    className="px-5 py-2 text-[11px] uppercase tracking-[0.15em] transition-opacity hover:opacity-70"
+                    style={{ fontFamily: "var(--font-space-mono)", border: "1px solid rgba(26,26,26,0.2)", color: "var(--ink)" }}
+                  >
+                    Siguiente →
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

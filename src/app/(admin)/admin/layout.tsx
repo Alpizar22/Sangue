@@ -1,6 +1,5 @@
-import { headers } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
 import AdminSidebar from "@/components/admin/Sidebar"
 import type { Metadata } from "next"
 
@@ -9,11 +8,7 @@ export const metadata: Metadata = {
   robots: "noindex,nofollow",
 }
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers()
   const pathname = headersList.get("x-pathname") ?? ""
 
@@ -21,14 +16,14 @@ export default async function AdminLayout({
     return <>{children}</>
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const cookieStore = await cookies()
+  const session = cookieStore.get("admin_session")
 
-  if (!user) redirect("/admin/login")
+  if (!session?.value) redirect("/admin/login")
 
   return (
     <div className="min-h-screen flex bg-gray-50">
-      <AdminSidebar userEmail={user.email || ""} />
+      <AdminSidebar />
       <main className="flex-1 p-6 overflow-auto">{children}</main>
     </div>
   )

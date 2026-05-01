@@ -185,8 +185,8 @@ export default function FAQPage() {
               WhatsApp
             </a>
             {" "}o a{" "}
-            <a href="mailto:hola@theia.lat" style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
-              hola@theia.lat
+            <a href="mailto:nasusagency@gmail.com" style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
+              nasusagency@gmail.com
             </a>
             . Respondemos Lun–Vie · 10:00–18:00 hrs.
           </p>

@@ -21,7 +21,6 @@ interface CategoryResult {
 const CATEGORIES = [
   { id: "D2432903-0D4E-4787-886F-D3D9DA7890D9", label: "Lady Dresses",        category: "Lady Dresses" },
   { id: "5A3E7341-18B5-4C61-BFCD-8965B3479A9A", label: "Blouses & Shirts",    category: "Blouses & Shirts" },
-  { id: "5A053E55-5D18-42EF-A4E7-B08AEA4D9B2F", label: "Soccer Jerseys",      category: "Jerseys" },
   { id: "1357251872037146624",                   label: "Ladies Short Sleeve", category: "Ladies Short Sleeve" },
 ]
 
@@ -29,7 +28,7 @@ async function syncCategory(cat: typeof CATEGORIES[number]): Promise<SyncResult>
   const res = await fetch("/api/cj/sync", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ categoryId: cat.id, category: cat.category, page: 1, limit: 50 }),
+    body: JSON.stringify({ categoryId: cat.id, category: cat.category, page: 1, limit: 30 }),
   })
   return res.json()
 }
@@ -84,7 +83,7 @@ export default function CJSyncButton() {
     <div className="bg-white rounded-xl border p-5 space-y-4">
       <div>
         <h2 className="font-semibold">Sincronizar desde CJ Dropshipping</h2>
-        <p className="text-sm text-gray-500 mt-0.5">Costo real = precio CJ + $120 envío · Margen mínimo 30%</p>
+        <p className="text-sm text-gray-500 mt-0.5">Máx 30 productos por categoría · Margen mínimo 30%</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">

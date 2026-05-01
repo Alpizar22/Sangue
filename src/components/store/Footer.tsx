@@ -111,12 +111,12 @@ export default function Footer() {
             style={{ fontFamily: "var(--font-space-mono)" }}
           >
             <a
-              href="mailto:hola@theia.lat"
+              href="mailto:nasusagency@gmail.com"
               className="flex items-center gap-2 transition-opacity hover:opacity-100"
               style={{ color: "var(--ink)", opacity: 0.45 }}
             >
               <span>✉</span>
-              hola@theia.lat
+              nasusagency@gmail.com
             </a>
             <a
               href="https://wa.me/5213312345678?text=Hola%2C+tengo+una+pregunta+sobre+mi+pedido+en+Theia"

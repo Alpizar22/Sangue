@@ -1,11 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -16,11 +14,14 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError(null)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const res = await fetch("/api/admin/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    })
 
-    if (error) {
-      setError("Credenciales incorrectas")
+    if (!res.ok) {
+      setError("Clave incorrecta")
       setLoading(false)
       return
     }
@@ -30,42 +31,71 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border w-full max-w-sm text-gray-900">
-        <h1 className="text-2xl font-bold mb-2 text-gray-900">Panel Theia</h1>
-        <p className="text-gray-500 text-sm mb-6">Acceso exclusivo para administradores</p>
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: "var(--bg)" }}
+    >
+      <div
+        className="w-full max-w-sm p-8"
+        style={{ border: "1px solid rgba(26,26,26,0.1)", background: "var(--paper)" }}
+      >
+        <p
+          className="text-3xl italic mb-1"
+          style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+        >
+          Theia
+        </p>
+        <p
+          className="text-[10px] uppercase tracking-[0.25em] mb-10"
+          style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+        >
+          Panel de administración
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-black"
-              placeholder="ximena@theia.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1 text-gray-700">Contraseña</label>
+            <label
+              className="block text-[10px] uppercase tracking-[0.2em] mb-2"
+              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+            >
+              Clave de acceso
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-black"
+              autoFocus
+              className="w-full px-3 py-2.5 text-sm focus:outline-none"
+              style={{
+                fontFamily: "var(--font-space-mono)",
+                border: "1px solid rgba(26,26,26,0.2)",
+                background: "var(--bg)",
+                color: "var(--ink)",
+              }}
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && (
+            <p
+              className="text-[11px]"
+              style={{ fontFamily: "var(--font-space-mono)", color: "#d63031" }}
+            >
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-2.5 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50"
+            className="w-full py-3 text-[11px] uppercase tracking-[0.2em] transition-opacity hover:opacity-80 disabled:opacity-40"
+            style={{
+              fontFamily: "var(--font-space-mono)",
+              background: "var(--ink)",
+              color: "var(--bg)",
+            }}
           >
-            {loading ? "Ingresando..." : "Ingresar"}
+            {loading ? "Verificando..." : "Acceder"}
           </button>
         </form>
       </div>

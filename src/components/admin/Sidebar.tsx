@@ -10,7 +10,6 @@ import {
   Tag,
   LogOut,
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -20,13 +19,12 @@ const NAV_ITEMS = [
   { href: "/admin/precios", label: "Precios", icon: Tag },
 ]
 
-export default function AdminSidebar({ userEmail }: { userEmail: string }) {
+export default function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
 
   async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await fetch("/api/admin/logout", { method: "POST" })
     router.push("/admin/login")
     router.refresh()
   }
@@ -59,9 +57,6 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
       </nav>
 
       <div className="p-3 border-t">
-        <div className="px-3 py-2 mb-1">
-          <p className="text-xs font-medium truncate">{userEmail}</p>
-        </div>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 w-full"

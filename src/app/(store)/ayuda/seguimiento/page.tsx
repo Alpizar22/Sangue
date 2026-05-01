@@ -284,8 +284,8 @@ export default async function SeguimientoPage({ searchParams }: { searchParams: 
                 WhatsApp
               </a>
               {" o "}
-              <a href="mailto:hola@theia.lat" style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
-                hola@theia.lat
+              <a href="mailto:nasusagency@gmail.com" style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
+                nasusagency@gmail.com
               </a>
             </p>
           </div>
