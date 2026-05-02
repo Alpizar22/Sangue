@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+
+const MAX_PRODUCTS = 90
 
 interface SyncResult {
   synced: number
@@ -39,6 +41,20 @@ export default function CJSyncButton() {
   const [allResults, setAllResults] = useState<CategoryResult[] | null>(null)
   const [categoryId, setCategoryId] = useState(CATEGORIES[0].id)
   const [syncAllProgress, setSyncAllProgress] = useState<string | null>(null)
+  const [productCount, setProductCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch("/api/search?q=a&_count=1")
+      .catch(() => null)
+    // Fetch product count via a dedicated lightweight query
+    fetch("/api/admin/product-count")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.count != null) setProductCount(d.count) })
+      .catch(() => null)
+  }, [result, allResults])
+
+  const atLimit = productCount !== null && productCount >= MAX_PRODUCTS
+  const nearLimit = productCount !== null && productCount >= 85 && productCount < MAX_PRODUCTS
 
   async function handleSync() {
     setLoading(true)
@@ -84,6 +100,15 @@ export default function CJSyncButton() {
       <div>
         <h2 className="font-semibold">Sincronizar desde CJ Dropshipping</h2>
         <p className="text-sm text-gray-500 mt-0.5">Máx 30 productos por categoría · Margen mínimo 30%</p>
+        {productCount !== null && (
+          <p className={`text-xs font-medium mt-1 ${atLimit ? "text-red-600" : nearLimit ? "text-amber-600" : "text-gray-400"}`}>
+            {atLimit
+              ? `🚫 Límite alcanzado (${productCount}/${MAX_PRODUCTS}) — elimina productos antes de sincronizar`
+              : nearLimit
+              ? `⚠️ ${productCount}/${MAX_PRODUCTS} productos — considera eliminar algunos`
+              : `${productCount}/${MAX_PRODUCTS} productos`}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
@@ -107,14 +132,14 @@ export default function CJSyncButton() {
         <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={handleSync}
-            disabled={loading}
+            disabled={loading || atLimit}
             className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
           >
             {loading && !syncAllProgress ? "Sincronizando…" : "Sincronizar"}
           </button>
           <button
             onClick={handleSyncAll}
-            disabled={loading}
+            disabled={loading || atLimit}
             className="border border-black text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
           >
             {syncAllProgress ?? "Sync Todo"}

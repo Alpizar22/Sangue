@@ -1,9 +1,11 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, lazy, Suspense } from "react"
 import Link from "next/link"
-import { ShoppingBag } from "lucide-react"
+import { ShoppingBag, Search } from "lucide-react"
 import { useCartStore } from "@/store/cart"
+
+const SearchModal = lazy(() => import("./SearchModal"))
 
 const COLECCION_MENU = [
   { href: "/coleccion", label: "Todas" },
@@ -92,6 +94,7 @@ export default function Header() {
   const itemCount = useCartStore((s) => s.itemCount())
   const [mounted, setMounted] = useState(false)
   const [openMenu, setOpenMenu] = useState<MenuKey | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => setMounted(true), [])
@@ -143,8 +146,16 @@ export default function Header() {
           Theia
         </Link>
 
-        {/* Carrito derecha */}
-        <div className="flex items-center justify-end min-w-[120px]">
+        {/* Iconos derecha */}
+        <div className="flex items-center justify-end gap-4 min-w-[120px]">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="transition-opacity hover:opacity-70"
+            style={{ color: "var(--ink)" }}
+            aria-label="Buscar"
+          >
+            <Search size={18} strokeWidth={1.5} />
+          </button>
           <Link
             href="/carrito"
             className="relative transition-opacity hover:opacity-70"
@@ -163,6 +174,12 @@ export default function Header() {
         </div>
 
       </div>
+
+      {searchOpen && (
+        <Suspense fallback={null}>
+          <SearchModal onClose={() => setSearchOpen(false)} />
+        </Suspense>
+      )}
     </header>
   )
 }

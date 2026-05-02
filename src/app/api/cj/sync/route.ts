@@ -63,7 +63,20 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = adminSupabase()
-    const rows = cjProducts.map((p) => mapCJProductToRow(p, category))
+
+    const { count: currentCount } = await supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+
+    const MAX_PRODUCTS = 90
+    const available = MAX_PRODUCTS - (currentCount ?? 0)
+
+    if (available <= 0) {
+      return NextResponse.json({ synced: 0, total, page, limit, message: "Límite de 90 productos alcanzado. Elimina algunos antes de sincronizar." })
+    }
+
+    const allRows = cjProducts.map((p) => mapCJProductToRow(p, category))
+    const rows = allRows.slice(0, available)
 
     const { error, count } = await supabase
       .from("products")
@@ -74,8 +87,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    const limitMsg = rows.length < allRows.length ? ` (limitado a ${rows.length} — límite 90)` : ""
     console.log(`[cj/sync] Sincronizados ${count} productos de categoría ${categoryId}`)
-    return NextResponse.json({ synced: count, total, page, limit })
+    return NextResponse.json({ synced: count, total, page, limit, message: limitMsg || undefined })
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error desconocido"
     console.error("[cj/sync]", message)

@@ -5,6 +5,8 @@ import DeleteProductButton from "@/components/admin/DeleteProductButton"
 
 export const metadata = { title: "Productos" }
 
+const MAX_PRODUCTS = 90
+
 export default async function AdminProductsPage() {
   const supabase = await createAdminClient()
   const { data: products, error: fetchError } = await supabase
@@ -15,8 +17,39 @@ export default async function AdminProductsPage() {
   if (fetchError) console.error("[productos] fetch error:", fetchError)
   if (products?.length) console.log("[productos] first row keys:", Object.keys(products[0]))
 
+  const count = products?.length ?? 0
+  const pct = Math.round((count / MAX_PRODUCTS) * 100)
+  const nearLimit = count >= 85
+  const atLimit = count >= MAX_PRODUCTS
+
   return (
     <div>
+      {/* Contador de productos */}
+      <div className="mb-6 p-4 bg-white rounded-xl border space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-medium text-gray-700">{count} productos activos</span>
+          <span className={`font-mono text-xs font-semibold ${atLimit ? "text-red-600" : nearLimit ? "text-amber-600" : "text-gray-500"}`}>
+            {count} / {MAX_PRODUCTS}
+          </span>
+        </div>
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${atLimit ? "bg-red-500" : nearLimit ? "bg-amber-400" : "bg-green-500"}`}
+            style={{ width: `${Math.min(pct, 100)}%` }}
+          />
+        </div>
+        {nearLimit && !atLimit && (
+          <p className="text-xs text-amber-700 font-medium">
+            ⚠️ {count}/90 productos — considera eliminar algunos antes de sincronizar
+          </p>
+        )}
+        {atLimit && (
+          <p className="text-xs text-red-700 font-medium">
+            🚫 Límite alcanzado — elimina productos antes de sincronizar
+          </p>
+        )}
+      </div>
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Productos</h1>
         <div className="flex gap-2">
