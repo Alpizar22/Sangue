@@ -4,6 +4,7 @@ import { useState } from "react"
 
 interface ActionResult {
   updated?: number
+  total?: number
   margin?: string
   error?: string
 }
@@ -43,11 +44,21 @@ function ActionButton({
         {loading ? "Procesando…" : label}
       </button>
       {result && (
-        <span className={`text-sm ${result.error ? "text-red-500" : "text-green-600"}`}>
-          {result.error
-            ? `Error: ${result.error}`
-            : `✓ ${result.updated ?? 0} actualizados${result.margin ? ` (margen ${result.margin})` : ""}`}
-        </span>
+        <div className="flex flex-col gap-0.5">
+          {result.error && (
+            <span className="text-sm text-red-500 break-all max-w-sm">
+              Error: {result.error}
+            </span>
+          )}
+          {result.updated !== undefined && (
+            <span className={`text-sm ${result.error ? "text-amber-600" : "text-green-600"}`}>
+              {result.error ? "⚠" : "✓"}{" "}
+              {result.updated} actualizados
+              {result.total !== undefined ? ` / ${result.total} total` : ""}
+              {result.margin ? ` (margen ${result.margin})` : ""}
+            </span>
+          )}
+        </div>
       )}
     </div>
   )

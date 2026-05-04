@@ -14,16 +14,32 @@ const USD_TO_MXN = 17.5
 const MARGIN = 1.40   // 40% sobre costo CJ (envío cobrado por separado al cliente)
 const MAX_PRICE = 999999.99
 
-export async function translateTitles(titles: string[]): Promise<string[]> {
-  if (!titles.length) return titles
+export interface TranslateResult {
+  titles: string[]
+  error?: string
+  hasApiKey: boolean
+}
+
+export async function translateTitles(titles: string[]): Promise<TranslateResult> {
+  if (!titles.length) return { titles, hasApiKey: false }
+
   const apiKey = process.env.ANTHROPIC_API_KEY
+  console.log("[translateTitles] ANTHROPIC_API_KEY presente:", !!apiKey)
+
   if (!apiKey) {
-    console.warn("[sync] ANTHROPIC_API_KEY no configurado — usando títulos originales")
-    return titles
+    return {
+      titles,
+      hasApiKey: false,
+      error: "ANTHROPIC_API_KEY no configurada en variables de entorno",
+    }
   }
+
   try {
     const Anthropic = (await import("@anthropic-ai/sdk")).default
     const client = new Anthropic({ apiKey })
+
+    console.log(`[translateTitles] Enviando ${titles.length} títulos a Claude Haiku...`)
+
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 2048,
@@ -44,14 +60,30 @@ Títulos:
 ${JSON.stringify(titles)}`,
       }],
     })
+
     const text = response.content[0].type === "text" ? response.content[0].text : ""
+    console.log("[translateTitles] Respuesta raw:", text.slice(0, 300))
+
     const match = text.match(/\[[\s\S]*\]/)
-    if (!match) return titles
+    if (!match) {
+      const err = `Claude no devolvió JSON array válido. Respuesta: ${text.slice(0, 200)}`
+      console.error("[translateTitles]", err)
+      return { titles, hasApiKey: true, error: err }
+    }
+
     const translated = JSON.parse(match[0]) as string[]
-    return Array.isArray(translated) && translated.length === titles.length ? translated : titles
+    if (!Array.isArray(translated) || translated.length !== titles.length) {
+      const err = `Array devuelto tiene longitud incorrecta: ${translated.length} vs ${titles.length}`
+      console.error("[translateTitles]", err)
+      return { titles, hasApiKey: true, error: err }
+    }
+
+    console.log(`[translateTitles] OK — ${translated.length} títulos traducidos`)
+    return { titles: translated, hasApiKey: true }
   } catch (err) {
-    console.error("[sync] Error traduciendo títulos:", err)
-    return titles
+    const message = err instanceof Error ? err.message : String(err)
+    console.error("[translateTitles] Error completo:", err)
+    return { titles, hasApiKey: true, error: message }
   }
 }
 
@@ -115,7 +147,7 @@ export async function POST(req: NextRequest) {
     }
 
     const sliced = cjProducts.slice(0, available)
-    const translatedTitles = await translateTitles(sliced.map((p) => p.nameEn))
+    const { titles: translatedTitles } = await translateTitles(sliced.map((p) => p.nameEn))
     const rows = sliced.map((p, i) => mapCJProductToRow(p, category, translatedTitles[i]))
 
     const { error, count } = await supabase
