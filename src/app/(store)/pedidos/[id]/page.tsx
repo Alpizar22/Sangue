@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import type { Metadata } from "next"
+import ClearCartOnSuccess from "@/components/store/ClearCartOnSuccess"
 
 export const metadata: Metadata = { title: "Tu pedido — Theia" }
 
@@ -42,15 +43,18 @@ export default async function OrderPage({ params, searchParams }: Props) {
 
         {/* Status banner */}
         {isSuccess && (
-          <div
-            className="rounded-xl px-6 py-5 text-center space-y-1"
-            style={{ background: "#d1fae5", border: "1px solid #6ee7b7" }}
-          >
-            <p className="text-lg font-semibold" style={{ color: "#065f46" }}>¡Pago recibido!</p>
-            <p className="text-sm" style={{ color: "#047857" }}>
-              Te enviaremos un correo cuando tu pedido sea despachado.
-            </p>
-          </div>
+          <>
+            <ClearCartOnSuccess />
+            <div
+              className="rounded-xl px-6 py-5 text-center space-y-1"
+              style={{ background: "#d1fae5", border: "1px solid #6ee7b7" }}
+            >
+              <p className="text-lg font-semibold" style={{ color: "#065f46" }}>¡Pago recibido!</p>
+              <p className="text-sm" style={{ color: "#047857" }}>
+                Te enviaremos un correo cuando tu pedido sea despachado.
+              </p>
+            </div>
+          </>
         )}
         {isPending && (
           <div

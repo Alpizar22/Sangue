@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import AdminActions from "@/components/admin/AdminActions"
 
 export const metadata = { title: "Dashboard" }
 
@@ -33,6 +34,8 @@ export default async function AdminDashboard() {
           </div>
         ))}
       </div>
+
+      <AdminActions />
 
       <div className="bg-white rounded-xl border p-5">
         <h2 className="font-semibold mb-4">Últimos pedidos</h2>

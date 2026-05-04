@@ -7,7 +7,9 @@ import { Trash2 } from "lucide-react"
 const SHIPPING_COST = 155
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, total, clearCart } = useCartStore()
+  const { items, removeItem, updateQuantity, total, clearCart, _hasHydrated } = useCartStore()
+
+  if (!_hasHydrated) return null
 
   if (items.length === 0) {
     return (

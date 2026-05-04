@@ -79,7 +79,7 @@ function Field({
 const SHIPPING_COST = 155
 
 export default function CheckoutPage() {
-  const { items, total, clearCart } = useCartStore()
+  const { items, total, _hasHydrated } = useCartStore()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
@@ -96,10 +96,10 @@ export default function CheckoutPage() {
   })
 
   useEffect(() => {
-    if (items.length === 0) router.push("/carrito")
-  }, [items.length, router])
+    if (_hasHydrated && items.length === 0) router.push("/carrito")
+  }, [_hasHydrated, items.length, router])
 
-  if (items.length === 0) return null
+  if (!_hasHydrated || items.length === 0) return null
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target
@@ -199,7 +199,6 @@ export default function CheckoutPage() {
     const data = await res.json()
 
     if (res.ok && data.checkoutUrl) {
-      clearCart()
       window.location.href = data.checkoutUrl
     } else {
       alert(data.error || "Error al procesar. Intentá nuevamente.")

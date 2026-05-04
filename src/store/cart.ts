@@ -4,6 +4,8 @@ import type { CartItem, Product } from "@/types"
 
 interface CartState {
   items: CartItem[]
+  _hasHydrated: boolean
+  setHasHydrated: (v: boolean) => void
   addItem: (product: Product, size: string, color: string, quantity?: number) => void
   removeItem: (productId: string, size: string, color: string) => void
   updateQuantity: (productId: string, size: string, color: string, quantity: number) => void
@@ -16,6 +18,8 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      _hasHydrated: false,
+      setHasHydrated: (v) => set({ _hasHydrated: v }),
 
       addItem: (product, size, color, quantity = 1) => {
         set((state) => {
@@ -71,6 +75,9 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "theia-cart",
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     }
   )
 )

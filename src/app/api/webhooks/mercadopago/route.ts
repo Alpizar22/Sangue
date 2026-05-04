@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       customerPhone: customer?.phone ?? "0000000000",
       shippingAddress,
       items: (order.items ?? []) as { shein_sku: string | null; quantity: number; size: string }[],
-      remark: `Pedido Theia #${orderId.slice(0, 8)}`,
+      remark: `Pedido Theia #${orderId.slice(0, 8)}. White label: etiqueta Theia en todos los productos. Custom packaging: incluir tarjeta de marca Theia.`,
     })
 
     if (cjInput) {
