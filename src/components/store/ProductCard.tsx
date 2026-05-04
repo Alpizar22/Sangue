@@ -1,5 +1,4 @@
 import Link from "next/link"
-import Image from "next/image"
 import type { Product } from "@/types"
 
 const NEW_THRESHOLD_DAYS = 14
@@ -16,13 +15,12 @@ export default function ProductCard({ product }: { product: Product }) {
         style={{ background: "var(--paper)" }}
       >
         {product.images?.[0] ? (
-          <Image
+          <img
             src={product.images[0]}
             alt={product.title}
-            fill
             loading="lazy"
             className="object-cover group-hover:scale-105 transition-transform duration-500"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
           />
         ) : (
           <div

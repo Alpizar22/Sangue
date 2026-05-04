@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { X } from "lucide-react"
-import Image from "next/image"
 
 interface SearchResult {
   id: string
@@ -102,11 +101,10 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-black/5 transition-colors text-left"
                 >
                   {item.images?.[0] ? (
-                    <Image
+                    <img
                       src={item.images[0]}
                       alt={item.title}
-                      width={44}
-                      height={44}
+                      loading="lazy"
                       className="rounded-lg object-cover flex-shrink-0"
                       style={{ width: 44, height: 44 }}
                     />

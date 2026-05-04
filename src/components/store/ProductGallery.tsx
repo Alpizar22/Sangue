@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef } from "react"
-import Image from "next/image"
 
 interface Props {
   images: string[]
@@ -69,13 +68,12 @@ export default function ProductGallery({ images, title, activeIndex, onActiveCha
                 pointerEvents: i === clampedActive ? "auto" : "none",
               }}
             >
-              <Image
+              <img
                 src={img}
                 alt={`${title} ${i + 1}`}
-                fill
+                loading={i === 0 ? "eager" : "lazy"}
                 className="object-cover"
-                sizes="100vw"
-                priority={i === 0}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
               />
             </div>
           ))}
@@ -146,13 +144,12 @@ export default function ProductGallery({ images, title, activeIndex, onActiveCha
           className="relative w-full aspect-[3/4] rounded-xl overflow-hidden cursor-zoom-in"
           style={{ background: "var(--paper)" }}
         >
-          <Image
+          <img
             src={images[clampedActive]}
             alt={title}
-            fill
+            loading="eager"
             className="object-cover transition-transform duration-700 ease-out hover:scale-110"
-            sizes="50vw"
-            priority
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
           />
         </div>
 
@@ -175,12 +172,12 @@ export default function ProductGallery({ images, title, activeIndex, onActiveCha
                     style={{ boxShadow: `inset 0 0 0 2px var(--ink)` }}
                   />
                 )}
-                <Image
+                <img
                   src={img}
                   alt={`${title} vista ${i + 1}`}
-                  fill
+                  loading="lazy"
                   className="object-cover"
-                  sizes="80px"
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
                 />
               </button>
             ))}

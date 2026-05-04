@@ -1,5 +1,4 @@
 import Link from "next/link"
-import Image from "next/image"
 import { createAdminClient } from "@/lib/supabase/server"
 import Header from "@/components/store/Header"
 import Footer from "@/components/store/Footer"
@@ -80,12 +79,12 @@ export default async function HomePage() {
             style={{ minHeight: "520px", display: "block" }}
           >
             {dressImage ? (
-              <Image
+              <img
                 src={dressImage}
                 alt="Colección Mujer"
-                fill
+                loading="eager"
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
-                sizes="100vw"
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
               />
             ) : (
               <div className="absolute inset-0" style={{ background: "var(--paper)" }} />
