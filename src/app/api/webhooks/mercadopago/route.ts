@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { createHmac } from "crypto"
 import { getMercadoPagoClient } from "@/lib/mercadopago/client"
 import { Payment } from "mercadopago"
-import { createCJOrder, buildCJOrderInput } from "@/lib/cj/orders"
+import { createDropiOrder, buildDropiOrderInput } from "@/lib/dropi/orders"
 import type { ShippingAddress } from "@/types"
 
 function adminSupabase() {
@@ -99,34 +99,40 @@ export async function POST(req: NextRequest) {
 
     console.log(`[mp-webhook] Pedido ${orderId} marcado como pagado`)
 
-    // 2. Crear orden en CJ para ítems con variant ID de CJ
+    // 2. Crear orden en Dropi
     const customer = order.customer as { name: string; phone: string | null } | null
     const shippingAddress = order.shipping_address as ShippingAddress
+    type OrderItem = { dropi_product_id?: number | null; dropi_variation_id?: number | null; quantity: number; unit_price: number }
 
-    const cjInput = buildCJOrderInput({
-      orderId,
-      customerName: customer?.name ?? "Cliente",
-      customerPhone: customer?.phone ?? "0000000000",
-      shippingAddress,
-      items: (order.items ?? []) as { shein_sku: string | null; quantity: number; size: string }[],
-      remark: `Pedido Theia #${orderId.slice(0, 8)}. White label: etiqueta Theia en todos los productos. Custom packaging: incluir tarjeta de marca Theia.`,
-    })
+    try {
+      const dropiInput = await buildDropiOrderInput({
+        orderId,
+        customerName: customer?.name ?? "Cliente",
+        shippingAddress,
+        items: ((order.items ?? []) as OrderItem[]).map((i) => ({
+          dropi_product_id: i.dropi_product_id ?? null,
+          dropi_variation_id: i.dropi_variation_id ?? null,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+        })),
+        total: order.total,
+      })
 
-    if (cjInput) {
-      try {
-        const cjResult = await createCJOrder(cjInput)
+      if (dropiInput) {
+        if (customer?.phone) dropiInput.telefono = customer.phone.replace(/\D/g, "")
+        const dropiResult = await createDropiOrder(dropiInput)
+        const supplierId = String(dropiResult.id ?? dropiResult.order_id ?? "")
         await supabase
           .from("orders")
-          .update({ status: "ordered_to_supplier", supplier_order_id: cjResult.orderId })
+          .update({ status: "ordered_to_supplier", supplier_order_id: supplierId })
           .eq("id", orderId)
-        console.log(`[mp-webhook] Orden CJ ${cjResult.orderId} creada para pedido ${orderId}`)
-      } catch (cjErr) {
-        // Pago confirmado aunque CJ falle — Ximena puede reintentar desde el panel
-        console.error(`[mp-webhook] Error CJ para pedido ${orderId}:`, cjErr)
+        console.log(`[mp-webhook] Orden Dropi ${supplierId} creada para pedido ${orderId}`)
+      } else {
         await supabase.from("orders").update({ status: "processing" }).eq("id", orderId)
       }
-    } else {
-      // Sin ítems CJ — revisión manual
+    } catch (dropiErr) {
+      // Pago confirmado aunque Dropi falle — Ximena puede reintentar desde el panel
+      console.error(`[mp-webhook] Error Dropi para pedido ${orderId}:`, dropiErr)
       await supabase.from("orders").update({ status: "processing" }).eq("id", orderId)
     }
 

@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
     remotePatterns: [
+      { protocol: "https", hostname: "app.dropi.mx" },
+      { protocol: "https", hostname: "**.dropi.mx" },
       { protocol: "https", hostname: "cf.cjdropshipping.com" },
       { protocol: "https", hostname: "oss-cf.cjdropshipping.com" },
       { protocol: "https", hostname: "files.cjdropshipping.com" },
