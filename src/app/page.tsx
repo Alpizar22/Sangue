@@ -9,21 +9,21 @@ const CATEGORIES = [
     label: "Mascotas",
     icon: "🐾",
     desc: "Accesorios y juguetes para tu mejor amigo",
-    href: "/coleccion?categoria=mascotas",
+    href: "/productos?categoria=mascotas",
   },
   {
     slug: "gadgets",
     label: "Gadgets",
     icon: "⚡",
     desc: "Tecnología práctica para el día a día",
-    href: "/coleccion?categoria=gadgets",
+    href: "/productos?categoria=gadgets",
   },
   {
     slug: "aseo",
     label: "Aseo",
     icon: "🧴",
     desc: "Cuidado personal y hogar",
-    href: "/coleccion?categoria=aseo",
+    href: "/productos?categoria=aseo",
   },
 ]
 
@@ -121,7 +121,7 @@ export default function HomePage() {
         </div>
 
         <Link
-          href="/coleccion"
+          href="/productos"
           className="mt-10 inline-block px-8 py-3 text-xs uppercase tracking-[0.2em] transition-all hover:opacity-80"
           style={{
             fontFamily: "var(--font-space-mono, monospace)",

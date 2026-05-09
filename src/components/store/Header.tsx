@@ -1,112 +1,24 @@
 "use client"
 
-import { useState, useEffect, useRef, lazy, Suspense } from "react"
+import { useState, useEffect, lazy, Suspense } from "react"
 import Link from "next/link"
 import { ShoppingBag, Search } from "lucide-react"
 import { useCartStore } from "@/store/cart"
 
 const SearchModal = lazy(() => import("./SearchModal"))
 
-const COLECCION_MENU = [
-  { href: "/coleccion", label: "Todas" },
-  { href: "/coleccion?categoria=Lady+Dresses", label: "Vestidos" },
-  { href: "/coleccion?categoria=Blouses+%26+Shirts", label: "Blusas" },
-  { href: "/coleccion?categoria=Ladies+Short+Sleeve", label: "Camisetas" },
-  { href: "/coleccion?orden=nuevos", label: "Nuevos ingresos" },
+const NAV_LINKS = [
+  { href: "/productos?categoria=mascotas", label: "Mascotas" },
+  { href: "/productos?categoria=gadgets",  label: "Gadgets"  },
+  { href: "/productos?categoria=aseo",     label: "Aseo"     },
 ]
-
-const JERSEYS_MENU = [
-  { href: "/jerseys", label: "Todos los jerseys" },
-]
-
-type MenuKey = "coleccion" | "jerseys"
-
-function NavDropdown({
-  label,
-  menuKey,
-  items,
-  open,
-  onOpen,
-  onClose,
-}: {
-  label: string
-  menuKey: MenuKey
-  items: { href: string; label: string }[]
-  open: boolean
-  onOpen: (k: MenuKey) => void
-  onClose: () => void
-}) {
-  return (
-    <div
-      className="relative"
-      onMouseEnter={() => onOpen(menuKey)}
-      onMouseLeave={onClose}
-    >
-      <button
-        className="text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-100 flex items-center gap-1"
-        style={{
-          fontFamily: "var(--font-space-mono)",
-          color: "var(--ink)",
-          opacity: open ? 1 : 0.5,
-        }}
-      >
-        {label}
-        <span
-          className="inline-block transition-transform duration-200"
-          style={{ transform: open ? "rotate(180deg)" : "none", opacity: 0.5, fontSize: "8px" }}
-        >
-          ▾
-        </span>
-      </button>
-
-      {open && (
-        <div
-          className="absolute left-0 top-full mt-0 min-w-[200px] py-2 z-50"
-          style={{
-            background: "var(--paper)",
-            borderTop: "2px solid var(--ink)",
-            boxShadow: "0 12px 32px rgba(26,26,26,0.12)",
-          }}
-          onMouseEnter={() => onOpen(menuKey)}
-          onMouseLeave={onClose}
-        >
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block px-5 py-2.5 text-[10px] uppercase tracking-[0.2em] transition-all hover:pl-7"
-              style={{
-                fontFamily: "var(--font-space-mono)",
-                color: "var(--ink)",
-                opacity: 0.55,
-              }}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 export default function Header() {
   const itemCount = useCartStore((s) => s.itemCount())
   const [mounted, setMounted] = useState(false)
-  const [openMenu, setOpenMenu] = useState<MenuKey | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => setMounted(true), [])
-
-  function openDropdown(menu: MenuKey) {
-    if (closeTimer.current) clearTimeout(closeTimer.current)
-    setOpenMenu(menu)
-  }
-
-  function scheduleClose() {
-    closeTimer.current = setTimeout(() => setOpenMenu(null), 120)
-  }
 
   return (
     <header
@@ -116,25 +28,29 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
         {/* Nav izquierda */}
-        <nav className="flex items-center gap-7 min-w-[180px]">
-          <NavDropdown
-            label="Colección"
-            menuKey="coleccion"
-            items={COLECCION_MENU}
-            open={openMenu === "coleccion"}
-            onOpen={openDropdown}
-            onClose={scheduleClose}
-          />
-          <div className="hidden sm:block">
-            <NavDropdown
-              label="Jerseys"
-              menuKey="jerseys"
-              items={JERSEYS_MENU}
-              open={openMenu === "jerseys"}
-              onOpen={openDropdown}
-              onClose={scheduleClose}
-            />
-          </div>
+        <nav className="flex items-center gap-6 min-w-[180px]">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-100 hidden sm:block"
+              style={{
+                fontFamily: "var(--font-space-mono)",
+                color: "var(--ink)",
+                opacity: 0.5,
+              }}
+            >
+              {link.label}
+            </Link>
+          ))}
+          {/* Mobile: solo el primer link */}
+          <Link
+            href="/productos"
+            className="text-[10px] uppercase tracking-[0.2em] sm:hidden"
+            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+          >
+            Tienda
+          </Link>
         </nav>
 
         {/* Logo centrado */}
