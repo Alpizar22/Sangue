@@ -1,7 +1,4 @@
 import { createClient } from "@/lib/supabase/server"
-import ScrapingForm from "@/components/admin/ScrapingForm"
-import CJSyncButton from "@/components/admin/CJSyncButton"
-import EnrichButton from "@/components/admin/EnrichButton"
 import type { ScrapingJob } from "@/types"
 
 export const metadata = { title: "Scraping" }
@@ -19,10 +16,8 @@ export default async function ScrapingPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Importar productos</h1>
 
-      <div className="space-y-4">
-        <EnrichButton />
-        <ScrapingForm />
-        <CJSyncButton />
+      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-sm text-yellow-800">
+        Sync y enrich desactivados — tienda en modo pausa.
       </div>
 
       <div className="mt-8 bg-white rounded-xl border p-5">
