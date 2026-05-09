@@ -6,6 +6,13 @@ import { Payment } from "mercadopago"
 import { createDropiOrder, buildDropiOrderInput } from "@/lib/dropi/orders"
 import type { ShippingAddress } from "@/types"
 
+function splitName(full: string): { first: string; last: string } {
+  const parts = full.trim().split(/\s+/)
+  if (parts.length === 1) return { first: parts[0], last: "." }
+  const mid = Math.ceil(parts.length / 2)
+  return { first: parts.slice(0, mid).join(" "), last: parts.slice(mid).join(" ") }
+}
+
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -89,7 +96,7 @@ export async function POST(req: NextRequest) {
         mercadopago_payment_id: String(payment.id),
       })
       .eq("id", orderId)
-      .select("*, customer:customers(name, phone)")
+      .select("*, customer:customers(name, phone, email)")
       .single()
 
     if (orderError || !order) {
@@ -100,26 +107,46 @@ export async function POST(req: NextRequest) {
     console.log(`[mp-webhook] Pedido ${orderId} marcado como pagado`)
 
     // 2. Crear orden en Dropi
-    const customer = order.customer as { name: string; phone: string | null } | null
+    const customer = order.customer as { name: string; phone: string | null; email: string | null } | null
     const shippingAddress = order.shipping_address as ShippingAddress
-    type OrderItem = { dropi_product_id?: number | null; dropi_variation_id?: number | null; quantity: number; unit_price: number }
+    type StoredItem = { product_id: string; quantity: number; unit_price: number }
 
     try {
-      const dropiInput = await buildDropiOrderInput({
-        orderId,
-        customerName: customer?.name ?? "Cliente",
-        shippingAddress,
-        items: ((order.items ?? []) as OrderItem[]).map((i) => ({
-          dropi_product_id: i.dropi_product_id ?? null,
-          dropi_variation_id: i.dropi_variation_id ?? null,
+      // Lookup dropi_product_id for each item in this order
+      const storedItems = (order.items ?? []) as StoredItem[]
+      const productIds = storedItems.map((i) => i.product_id).filter(Boolean)
+
+      const { data: productRows } = await supabase
+        .from("products")
+        .select("id, dropi_product_id")
+        .in("id", productIds)
+
+      const dropiIdMap: Record<string, number> = {}
+      for (const p of productRows ?? []) {
+        if (p.dropi_product_id) dropiIdMap[p.id] = p.dropi_product_id
+      }
+
+      const dropiProducts = storedItems
+        .filter((i) => dropiIdMap[i.product_id])
+        .map((i) => ({
+          dropi_product_id: dropiIdMap[i.product_id],
+          price: i.unit_price,
           quantity: i.quantity,
-          unit_price: i.unit_price,
-        })),
-        total: order.total,
+        }))
+
+      const { first, last } = splitName(customer?.name ?? "Cliente")
+
+      const dropiInput = buildDropiOrderInput({
+        customerFirstName: first,
+        customerLastName: last,
+        customerPhone: (customer?.phone ?? "").replace(/\D/g, "") || "0000000000",
+        customerEmail: customer?.email ?? "",
+        shippingAddress,
+        products: dropiProducts,
+        subtotal: order.subtotal,
       })
 
       if (dropiInput) {
-        if (customer?.phone) dropiInput.telefono = customer.phone.replace(/\D/g, "")
         const dropiResult = await createDropiOrder(dropiInput)
         const supplierId = String(dropiResult.id ?? dropiResult.order_id ?? "")
         await supabase
