@@ -184,12 +184,6 @@ const DEMO_PRODUCTS = [
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}))
-    const secret = body.secret ?? req.headers.get("x-admin-secret")
-    if (secret !== process.env.ADMIN_PASSWORD) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
     const supabase = adminSupabase()
     const { data, error } = await supabase
       .from("products")
@@ -214,11 +208,6 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const secret = req.headers.get("x-admin-secret")
-    if (secret !== process.env.ADMIN_PASSWORD) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
     const supabase = adminSupabase()
     const ids = DEMO_PRODUCTS.map((p) => p.shein_product_id)
     const { error, count } = await supabase
