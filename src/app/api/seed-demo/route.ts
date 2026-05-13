@@ -186,7 +186,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
     const secret = body.secret ?? req.headers.get("x-admin-secret")
-    if (secret !== process.env.ADMIN_SECRET_KEY) {
+    if (secret !== process.env.ADMIN_PASSWORD) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const secret = req.headers.get("x-admin-secret")
-    if (secret !== process.env.ADMIN_SECRET_KEY) {
+    if (secret !== process.env.ADMIN_PASSWORD) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 })
     }
 
