@@ -1,41 +1,43 @@
 import { NextResponse } from "next/server"
-import { getDropiToken, DROPI_BASE } from "@/lib/dropi/client"
 
-export async function GET() {
-  const results: Record<string, unknown> = {}
+const TEST_ID = 36642
+const DROPI_TOKEN = process.env.DROPI_TOKEN ?? ""
 
-  // 1. Test auth
+async function probeUrl(url: string) {
   try {
-    const token = await getDropiToken()
-    results.auth = { ok: true, tokenLength: token.length }
-  } catch (e) {
-    results.auth = { ok: false, error: (e as Error).message }
-  }
-
-  // 2. Test product endpoint (with token if auth worked)
-  try {
-    const testId = 36642
-    const res = await fetch(`${DROPI_BASE}/products/${testId}`, {
+    const res = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${results.auth && (results.auth as { ok: boolean }).ok ? "TOKEN_FROM_AUTH" : "no-token"}`,
-        Accept: "application/json",
+        "dropi-integracion-key": `Token:${DROPI_TOKEN}`,
+        "Content-Type": "application/json",
       },
       cache: "no-store",
     })
     const body = await res.text()
-    results.products_endpoint = {
+    return {
+      url,
       status: res.status,
       ok: res.ok,
-      isJson: body.trimStart().startsWith("{") || body.trimStart().startsWith("["),
-      preview: body.slice(0, 200),
+      headers: Object.fromEntries(res.headers.entries()),
+      body_raw: body,
     }
   } catch (e) {
-    results.products_endpoint = { ok: false, error: (e as Error).message }
+    return { url, error: (e as Error).message }
   }
+}
+
+export async function GET() {
+  const tokenPresent = !!DROPI_TOKEN
+  const tokenPreview = DROPI_TOKEN ? `${DROPI_TOKEN.slice(0, 6)}...` : "(vacío)"
+
+  const [appResult, apiResult] = await Promise.all([
+    probeUrl(`https://app.dropi.mx/api/v1/products/${TEST_ID}`),
+    probeUrl(`https://api.dropi.mx/api/v1/products/${TEST_ID}`),
+  ])
 
   return NextResponse.json({
-    base: DROPI_BASE,
     timestamp: new Date().toISOString(),
-    ...results,
+    env: { tokenPresent, tokenPreview },
+    app_dropi_mx: appResult,
+    api_dropi_mx: apiResult,
   })
 }
