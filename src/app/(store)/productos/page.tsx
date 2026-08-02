@@ -10,6 +10,7 @@ const CATEGORIES = [
   { value: "mascotas",  label: "Mascotas 🐾" },
   { value: "gadgets",   label: "Gadgets ⚡" },
   { value: "aseo",      label: "Aseo 🧴" },
+  { value: "theia",     label: "Colección Theia 🖤" },
 ]
 
 type SearchParams = Promise<{ categoria?: string; q?: string }>

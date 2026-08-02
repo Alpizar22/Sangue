@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/productos?categoria=mascotas", label: "Mascotas" },
   { href: "/productos?categoria=gadgets",  label: "Gadgets"  },
   { href: "/productos?categoria=aseo",     label: "Aseo"     },
+  { href: "/productos?categoria=theia",    label: "Colección Theia" },
 ]
 
 export default function Header() {
