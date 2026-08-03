@@ -3,16 +3,8 @@ import { createClient } from "@supabase/supabase-js"
 import { createHmac } from "crypto"
 import { getMercadoPagoClient } from "@/lib/mercadopago/client"
 import { Payment } from "mercadopago"
-import { createDropiOrder, buildDropiOrderInput } from "@/lib/dropi/orders"
 import { createPrintfulOrder, buildPrintfulOrderInput } from "@/lib/printful"
 import type { ShippingAddress } from "@/types"
-
-function splitName(full: string): { first: string; last: string } {
-  const parts = full.trim().split(/\s+/)
-  if (parts.length === 1) return { first: parts[0], last: "." }
-  const mid = Math.ceil(parts.length / 2)
-  return { first: parts.slice(0, mid).join(" "), last: parts.slice(mid).join(" ") }
-}
 
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -107,13 +99,10 @@ export async function POST(req: NextRequest) {
 
     console.log(`[mp-webhook] Pedido ${orderId} marcado como pagado`)
 
-    // 2. Crear orden(es) en el/los proveedor(es) — Dropi y/o Printful según el source de cada producto
+    // 2. Crear orden en Printful
     const customer = order.customer as { name: string; phone: string | null; email: string | null } | null
     const shippingAddress = order.shipping_address as ShippingAddress
     type StoredItem = { product_id: string; quantity: number; unit_price: number }
-
-    const supplierIds: string[] = []
-    let anySucceeded = false
 
     try {
       const storedItems = (order.items ?? []) as StoredItem[]
@@ -121,51 +110,16 @@ export async function POST(req: NextRequest) {
 
       const { data: productRows } = await supabase
         .from("products")
-        .select("id, dropi_product_id, printful_variant_id, source")
+        .select("id, printful_variant_id, source")
         .in("id", productIds)
 
-      const dropiIdMap: Record<string, number> = {}
       const printfulIdMap: Record<string, number> = {}
       for (const p of productRows ?? []) {
-        if (p.dropi_product_id) dropiIdMap[p.id] = p.dropi_product_id
         if (p.source === "printful" && p.printful_variant_id) printfulIdMap[p.id] = p.printful_variant_id
       }
 
-      const { first, last } = splitName(customer?.name ?? "Cliente")
       const customerPhone = (customer?.phone ?? "").replace(/\D/g, "") || "0000000000"
 
-      // ── Dropi ──
-      const dropiProducts = storedItems
-        .filter((i) => dropiIdMap[i.product_id])
-        .map((i) => ({
-          dropi_product_id: dropiIdMap[i.product_id],
-          price: i.unit_price,
-          quantity: i.quantity,
-        }))
-
-      const dropiInput = buildDropiOrderInput({
-        customerFirstName: first,
-        customerLastName: last,
-        customerPhone,
-        customerEmail: customer?.email ?? "",
-        shippingAddress,
-        products: dropiProducts,
-        subtotal: order.subtotal,
-      })
-
-      if (dropiInput) {
-        try {
-          const dropiResult = await createDropiOrder(dropiInput)
-          const supplierId = String(dropiResult.id ?? dropiResult.order_id ?? "")
-          supplierIds.push(`dropi:${supplierId}`)
-          anySucceeded = true
-          console.log(`[mp-webhook] Orden Dropi ${supplierId} creada para pedido ${orderId}`)
-        } catch (dropiErr) {
-          console.error(`[mp-webhook] Error Dropi para pedido ${orderId}:`, dropiErr)
-        }
-      }
-
-      // ── Printful ──
       const printfulItems = storedItems
         .filter((i) => printfulIdMap[i.product_id])
         .map((i) => ({
@@ -186,27 +140,19 @@ export async function POST(req: NextRequest) {
       })
 
       if (printfulInput) {
-        try {
-          const printfulResult = await createPrintfulOrder(printfulInput)
-          supplierIds.push(`printful:${printfulResult.id}`)
-          anySucceeded = true
-          console.log(`[mp-webhook] Orden Printful ${printfulResult.id} creada para pedido ${orderId}`)
-        } catch (printfulErr) {
-          console.error(`[mp-webhook] Error Printful para pedido ${orderId}:`, printfulErr)
-        }
+        const printfulResult = await createPrintfulOrder(printfulInput)
+        await supabase
+          .from("orders")
+          .update({ status: "ordered_to_supplier", supplier_order_id: String(printfulResult.id) })
+          .eq("id", orderId)
+        console.log(`[mp-webhook] Orden Printful ${printfulResult.id} creada para pedido ${orderId}`)
+      } else {
+        await supabase.from("orders").update({ status: "processing" }).eq("id", orderId)
       }
-
-      await supabase
-        .from("orders")
-        .update({
-          status: anySucceeded ? "ordered_to_supplier" : "processing",
-          supplier_order_id: supplierIds.length ? supplierIds.join(" / ") : null,
-        })
-        .eq("id", orderId)
-    } catch (supplierErr) {
-      // Pago confirmado aunque falle la creación de la orden con el proveedor —
+    } catch (printfulErr) {
+      // Pago confirmado aunque falle la creación de la orden con Printful —
       // Ximena puede reintentar desde el panel
-      console.error(`[mp-webhook] Error creando orden(es) de proveedor para pedido ${orderId}:`, supplierErr)
+      console.error(`[mp-webhook] Error Printful para pedido ${orderId}:`, printfulErr)
       await supabase.from("orders").update({ status: "processing" }).eq("id", orderId)
     }
 

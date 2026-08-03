@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
-import { translateTitles } from "@/app/api/cj/sync/route"
+import { translateTitles } from "@/lib/translate"
 
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL

@@ -2,8 +2,28 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getPrintfulProduct, getPrintfulCatalogProduct } from "@/lib/printful"
 
-const EXCHANGE_RATE = 17.5 // USD → MXN, misma convención que la fórmula de precios Shein
+const EXCHANGE_RATE = 17.5 // solo se aplica si Printful devuelve costos en USD — ver getCostInMxn()
 const DEFAULT_MARGIN = 2.75
+
+// Printful's `type` es un enum en inglés (T-SHIRT, HOODIE, ...) — lo usamos como
+// subcategory/filtro de prenda en la tienda, con nombres más amigables en español.
+const TYPE_LABELS: Record<string, string> = {
+  "T-SHIRT": "Playeras",
+  "TANK-TOP": "Tops",
+  "HOODIE": "Hoodies",
+  "SWEATSHIRT": "Sudaderas",
+  "LONGSLEEVE": "Manga larga",
+  "DRESS": "Vestidos",
+  "LEGGINGS": "Leggings",
+  "JOGGERS": "Joggers",
+  "JACKET": "Chamarras",
+  "CAP": "Gorras",
+  "BAG": "Bolsas",
+}
+
+function typeLabel(type: string): string {
+  return TYPE_LABELS[type.toUpperCase()] ?? type.charAt(0) + type.slice(1).toLowerCase()
+}
 
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -31,17 +51,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Producto Printful sin variantes" }, { status: 400 })
     }
 
-    // Costo real de cada variante viene del catálogo general de Printful (USD)
+    // Costo real de cada variante viene del catálogo general de Printful.
+    // OJO: Printful devuelve los precios en la moneda configurada en la cuenta
+    // (este store está en MXN), no siempre en USD — convertir solo si hace falta.
     const catalogProductId = sync_variants[0].product.product_id
     const catalog = await getPrintfulCatalogProduct(catalogProductId)
     const costMap = new Map(catalog.variants.map((v) => [v.id, parseFloat(v.price) || 0]))
-    const catalogByVariantId = new Map(catalog.variants.map((v) => [v.id, v]))
+    const isMxn = (catalog.product.currency ?? "").toUpperCase() === "MXN"
 
-    const costsUsd = sync_variants.map((v) => costMap.get(v.variant_id) ?? (parseFloat(v.retail_price) || 0))
-    const maxCostUsd = Math.max(...costsUsd)
+    function toMxn(cost: number): number {
+      return isMxn ? cost : cost * EXCHANGE_RATE
+    }
 
-    const costPrice = roundUpTo10(maxCostUsd * EXCHANGE_RATE)
-    const salePrice = roundUpTo10(maxCostUsd * EXCHANGE_RATE * marginMultiplier)
+    const costsMxn = sync_variants.map((v) => toMxn(costMap.get(v.variant_id) ?? (parseFloat(v.retail_price) || 0)))
+    const maxCostMxn = Math.max(...costsMxn)
+
+    const costPrice = roundUpTo10(maxCostMxn)
+    const salePrice = roundUpTo10(maxCostMxn * marginMultiplier)
 
     const colors = new Set<string>()
     const colorSizes: Record<string, string[]> = {}
@@ -49,9 +75,8 @@ export async function POST(req: NextRequest) {
     const images = new Set<string>()
 
     for (const sv of sync_variants) {
-      const cv = catalogByVariantId.get(sv.variant_id)
-      const color = cv?.color ?? "Único"
-      const size = cv?.size ?? "Única"
+      const color = sv.color || "Único"
+      const size = sv.size || "Única"
       colors.add(color)
       colorSizes[color] = colorSizes[color] ? [...new Set([...colorSizes[color], size])] : [size]
       printfulVariantMap[`${color}|${size}`] = sv.variant_id
@@ -72,7 +97,7 @@ export async function POST(req: NextRequest) {
       sale_price: salePrice,
       markup_percentage: Math.round((marginMultiplier - 1) * 100),
       category: "theia",
-      subcategory: catalog.product.type_name ?? null,
+      subcategory: catalog.product.type ? typeLabel(catalog.product.type) : null,
       seccion: "theia",
       tags: ["printful", "diseno-propio"],
       sizes,

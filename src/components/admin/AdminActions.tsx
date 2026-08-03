@@ -69,9 +69,9 @@ export default function AdminActions() {
     <div className="bg-white rounded-xl border p-5 space-y-3">
       <h2 className="font-semibold text-sm text-gray-700">Acciones masivas</h2>
       <ActionButton
-        label="Recalcular precios (40%)"
+        label="Recalcular precios (2.75x)"
         endpoint="/api/admin/recalcular-precios"
-        confirmMsg="¿Recalcular precios de todos los productos con margen 40%?"
+        confirmMsg="¿Recalcular precios de todos los productos con margen 2.75x sobre el costo?"
       />
       <ActionButton
         label="Optimizar nombres (ES)"

@@ -8,10 +8,8 @@ import { useCartStore } from "@/store/cart"
 const SearchModal = lazy(() => import("./SearchModal"))
 
 const NAV_LINKS = [
-  { href: "/productos?categoria=mascotas", label: "Mascotas" },
-  { href: "/productos?categoria=gadgets",  label: "Gadgets"  },
-  { href: "/productos?categoria=aseo",     label: "Aseo"     },
-  { href: "/productos?categoria=theia",    label: "Colección Theia" },
+  { href: "/coleccion", label: "Colección" },
+  { href: "/jerseys",   label: "Jerseys"   },
 ]
 
 export default function Header() {

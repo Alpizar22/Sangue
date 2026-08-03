@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/productos", label: "Productos", icon: Package },
   { href: "/admin/pedidos", label: "Pedidos", icon: ShoppingCart },
-  { href: "/admin/scraping", label: "Scraping Shein", icon: Search },
+  { href: "/admin/scraping", label: "Importar productos", icon: Search },
   { href: "/admin/precios", label: "Precios", icon: Tag },
 ]
 

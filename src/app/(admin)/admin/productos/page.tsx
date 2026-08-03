@@ -63,7 +63,7 @@ export default async function AdminProductsPage() {
             href="/admin/scraping"
             className="border border-gray-300 px-4 py-2 rounded-lg text-sm hover:bg-gray-50"
           >
-            Importar desde Shein
+            Importar de Printful
           </Link>
         </div>
       </div>
@@ -129,7 +129,7 @@ export default async function AdminProductsPage() {
         </table>
         {(!products || products.length === 0) && (
           <p className="text-gray-400 text-sm text-center py-10">
-            No hay productos. Usa el scraper para importar desde Shein.
+            No hay productos. Impórtalos desde Printful.
           </p>
         )}
       </div>

@@ -98,7 +98,7 @@ export default function DevolucionesPage() {
             <PolicyRow
               icon="❌"
               title="Cambio por talla u otro motivo"
-              desc="No aceptamos devoluciones físicas por cambio de opinión o talla incorrecta. Nuestro proveedor CJ no acepta retornos físicos de México. Por eso incluimos guía de tallas detallada y atendemos dudas antes de la compra."
+              desc="No aceptamos devoluciones físicas por cambio de opinión o talla incorrecta. Cada prenda se imprime bajo demanda especialmente para tu pedido, por lo que no puede reingresarse a inventario. Por eso incluimos guía de tallas detallada y atendemos dudas antes de la compra."
             />
           </div>
 
@@ -124,7 +124,7 @@ export default function DevolucionesPage() {
               </Step>
               <Step n={3} title="Esperamos respuesta del proveedor (2–5 días hábiles)">
                 <p>
-                  Abrimos un caso con CJ Dropshipping. Una vez aprobado, coordinamos el
+                  Abrimos un caso con Printful. Una vez aprobado, coordinamos el
                   reenvío o el reembolso según lo acordado.
                 </p>
               </Step>

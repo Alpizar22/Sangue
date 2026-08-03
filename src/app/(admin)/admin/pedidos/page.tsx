@@ -8,7 +8,7 @@ const STATUS_LABELS: Record<string, string> = {
   pending: "Pendiente",
   paid: "Pagado",
   processing: "Procesando",
-  ordered_to_supplier: "Pedido a Shein",
+  ordered_to_supplier: "Pedido a Printful",
   shipped: "Enviado",
   delivered: "Entregado",
   cancelled: "Cancelado",
@@ -43,7 +43,7 @@ export default async function AdminOrdersPage() {
               <th className="px-4 py-3">Cliente</th>
               <th className="px-4 py-3">Total</th>
               <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3">Pedido en Shein</th>
+              <th className="px-4 py-3">Pedido en Printful</th>
               <th className="px-4 py-3">Fecha</th>
               <th className="px-4 py-3"></th>
             </tr>

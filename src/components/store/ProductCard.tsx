@@ -47,12 +47,12 @@ export default function ProductCard({ product }: { product: Product }) {
       </div>
 
       <div className="pt-2 pb-3 px-0.5">
-        {product.category && (
+        {product.subcategory && (
           <p
             className="text-[9px] uppercase tracking-[0.2em] mb-1"
             style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
           >
-            {product.category}
+            {product.subcategory}
           </p>
         )}
         <p

@@ -86,6 +86,8 @@ export interface PrintfulSyncVariant {
   variant_id: number // catalog variant id — el que se usa para crear órdenes
   retail_price: string
   currency: string
+  size: string
+  color: string
   files: { type: string; preview_url?: string }[]
   product: { variant_id: number; product_id: number; image: string; name: string }
 }
@@ -116,7 +118,7 @@ export interface PrintfulCatalogVariant {
   color: string
   color_code: string | null
   image: string
-  price: string // costo Printful en USD
+  price: string // costo Printful en la moneda configurada de la cuenta — ver product.currency
 }
 
 export interface PrintfulCatalogProductDetail {
@@ -129,6 +131,7 @@ export interface PrintfulCatalogProductDetail {
     model: string
     image: string
     variant_count: number
+    currency: string
   }
   variants: PrintfulCatalogVariant[]
 }
@@ -205,8 +208,8 @@ export async function createPrintfulOrder(input: PrintfulOrderInput): Promise<Pr
 }
 
 // Mapea nuestro pedido → orden Printful. Cada línea usa el printful_variant_id
-// guardado en el producto (mismo esquema simplificado que ya usan CJ/Dropi:
-// una sola variante por producto, sin distinguir talla/color en el pedido).
+// guardado en el producto (variante única por producto — no distingue
+// talla/color elegido en el pedido; ver printful_variant_map para eso).
 export function buildPrintfulOrderInput(params: {
   customerName: string
   customerEmail: string

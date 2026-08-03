@@ -11,9 +11,9 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "¿Cuánto tarda en llegar mi pedido?",
     a: (
       <>
-        El tiempo total estimado es de <strong>16 a 28 días hábiles</strong>: 1–3 días de
-        procesamiento + 15–25 días de tránsito con CJPacket MX Ordinary. Si prefieres más
-        rapidez, contáctanos para cotizar envío exprés (8–15 días con YunExpress).
+        El tiempo total estimado es de <strong>11 a 20 días hábiles</strong>: 1–3 días de
+        producción (cada prenda se imprime bajo demanda) + 10–17 días hábiles de envío
+        estándar a México.
       </>
     ),
   },
@@ -71,7 +71,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "¿Los productos son de buena calidad?",
-    a: "Trabajamos con CJ Dropshipping, uno de los proveedores más grandes y consolidados del mundo. La mayoría de nuestros productos tienen buenas reseñas y los seleccionamos cuidadosamente. Si algún producto llegara defectuoso, lo resolvemos sin costo adicional para ti.",
+    a: "Trabajamos con Printful, una de las plataformas de impresión bajo demanda más grandes y confiables del mundo. Cada prenda se imprime y confecciona especialmente para tu pedido con estándares de calidad certificados. Si algún producto llegara defectuoso, lo resolvemos sin costo adicional para ti.",
   },
   {
     q: "¿Hacen envíos a toda la República?",

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 
-const MARGIN = 1.40
+const MARGIN = 2.75 // costo Printful × margen — ver /api/printful/import
 const MAX_PRICE = 999999.99
 
 function adminSupabase() {
@@ -49,8 +49,8 @@ export async function POST(_req: NextRequest) {
       totalUpdated += batch.length
     }
 
-    console.log(`[recalcular-precios] ${totalUpdated} productos actualizados con margen 40%`)
-    return NextResponse.json({ updated: totalUpdated, margin: "40%" })
+    console.log(`[recalcular-precios] ${totalUpdated} productos actualizados con margen 2.75x`)
+    return NextResponse.json({ updated: totalUpdated, margin: "2.75x" })
   } catch (err) {
     const message = err instanceof Error ? err.message : "Error desconocido"
     return NextResponse.json({ error: message }, { status: 500 })
