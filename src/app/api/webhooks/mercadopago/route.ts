@@ -4,6 +4,7 @@ import { createHmac } from "crypto"
 import { getMercadoPagoClient } from "@/lib/mercadopago/client"
 import { Payment } from "mercadopago"
 import { createPrintfulOrder, buildPrintfulOrderInput } from "@/lib/printful"
+import { resolvePrintfulVariant } from "@/lib/printfulVariant"
 import type { ShippingAddress } from "@/types"
 
 function adminSupabase() {
@@ -102,7 +103,13 @@ export async function POST(req: NextRequest) {
     // 2. Crear orden en Printful
     const customer = order.customer as { name: string; phone: string | null; email: string | null } | null
     const shippingAddress = order.shipping_address as ShippingAddress
-    type StoredItem = { product_id: string; quantity: number; unit_price: number }
+    type StoredItem = {
+      product_id: string
+      quantity: number
+      unit_price: number
+      size?: string | null
+      color?: string | null
+    }
 
     try {
       const storedItems = (order.items ?? []) as StoredItem[]
@@ -110,23 +117,53 @@ export async function POST(req: NextRequest) {
 
       const { data: productRows } = await supabase
         .from("products")
-        .select("id, printful_variant_id, source")
+        .select("id, printful_variant_id, printful_variant_map, source")
         .in("id", productIds)
 
-      const printfulIdMap: Record<string, number> = {}
+      type PrintfulProductInfo = {
+        printful_variant_id: number | null
+        printful_variant_map: Record<string, number> | null
+      }
+      const printfulProductMap: Record<string, PrintfulProductInfo> = {}
       for (const p of productRows ?? []) {
-        if (p.source === "printful" && p.printful_variant_id) printfulIdMap[p.id] = p.printful_variant_id
+        if (p.source === "printful") {
+          printfulProductMap[p.id] = {
+            printful_variant_id: p.printful_variant_id,
+            printful_variant_map: p.printful_variant_map,
+          }
+        }
       }
 
       const customerPhone = (customer?.phone ?? "").replace(/\D/g, "") || "0000000000"
 
-      const printfulItems = storedItems
-        .filter((i) => printfulIdMap[i.product_id])
-        .map((i) => ({
-          printful_variant_id: printfulIdMap[i.product_id],
-          quantity: i.quantity,
-          unit_price: i.unit_price,
-        }))
+      // Resuelve el variant_id exacto (color+talla) de cada item — nunca
+      // asume el variant por defecto del producto sin dejar rastro.
+      const printfulItems: { printful_variant_id: number; quantity: number; unit_price: number }[] = []
+      for (const item of storedItems) {
+        const info = printfulProductMap[item.product_id]
+        if (!info) continue // no es un producto Printful — se ignora, como antes
+
+        const resolution = resolvePrintfulVariant({
+          color: item.color,
+          size: item.size,
+          printfulVariantMap: info.printful_variant_map,
+          printfulVariantId: info.printful_variant_id,
+        })
+
+        if (!resolution.ok) {
+          console.error(
+            `[mp-webhook] Pedido ${orderId}: no se pudo resolver variante Printful para producto ${item.product_id} ` +
+              `(color="${item.color ?? ""}", talla="${item.size ?? ""}"): ${resolution.error} — item excluido de la orden Printful.`
+          )
+          continue
+        }
+
+        printfulItems.push({
+          printful_variant_id: resolution.variantId,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        })
+      }
 
       const printfulInput = buildPrintfulOrderInput({
         customerName: customer?.name ?? "Cliente",
