@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useCartStore } from "@/store/cart"
 import { useRouter } from "next/navigation"
+import DiscountCodeField, { type AppliedDiscount } from "@/components/store/DiscountCodeField"
 
 interface FormState {
   first_name: string
@@ -87,6 +88,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState("")
+  const [discount, setDiscount] = useState<(AppliedDiscount & { signature: string }) | null>(null)
   const [paymentFailure] = useState(
     () => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("status") === "failure"
   )
@@ -152,6 +154,19 @@ export default function CheckoutPage() {
   }, [form.postal_code])
 
   if (!_hasHydrated || items.length === 0) return null
+
+  const cartLines = items.map(({ product_id, quantity, size, color }) => ({ product_id, quantity, size, color }))
+  // Si el carrito cambia después de aplicar un código, el importe calculado deja
+  // de corresponder: el descuento se descarta y hay que volver a aplicarlo. El
+  // servidor revalida de todos modos, esto solo evita mostrar un total irreal.
+  const cartSignature = cartLines
+    .map((line) => `${line.product_id}|${line.size}|${line.color}|${line.quantity}`)
+    .join(";")
+  const activeDiscount = discount && discount.signature === cartSignature ? discount : null
+
+  const subtotal = total()
+  const discountAmount = activeDiscount ? Math.min(activeDiscount.discountAmount, subtotal) : 0
+  const orderTotal = subtotal - discountAmount + SHIPPING_COST
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target
@@ -277,7 +292,9 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map(({ product_id, quantity, size, color }) => ({ product_id, quantity, size, color })),
+          items: cartLines,
+          // Solo viaja el código: el servidor recalcula el importe y el total.
+          ...(activeDiscount ? { discount_code: activeDiscount.code } : {}),
           customer: {
             email: form.email.toLowerCase().trim(),
             name: `${form.first_name.trim()} ${form.last_name.trim()}`,
@@ -551,7 +568,7 @@ export default function CheckoutPage() {
                 color: "var(--bg)",
               }}
             >
-              {loading ? "Procesando…" : `Pagar $${(total() + SHIPPING_COST).toLocaleString("es-MX")} MXN con MercadoPago`}
+              {loading ? "Procesando…" : `Pagar $${orderTotal.toLocaleString("es-MX")} MXN con MercadoPago`}
             </button>
           </form>
 
@@ -597,6 +614,16 @@ export default function CheckoutPage() {
                 </div>
               ))}
             </div>
+            <div className="pt-3" style={{ borderTop: "1px solid rgba(26,26,26,0.1)" }}>
+              <DiscountCodeField
+                items={cartLines}
+                applied={activeDiscount}
+                disabled={loading}
+                onApply={(value) => setDiscount({ ...value, signature: cartSignature })}
+                onRemove={() => setDiscount(null)}
+              />
+            </div>
+
             <div
               className="space-y-2 pt-3"
               style={{ borderTop: "1px solid rgba(26,26,26,0.1)" }}
@@ -606,8 +633,17 @@ export default function CheckoutPage() {
                 style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
               >
                 <span style={{ opacity: 0.5 }}>Subtotal</span>
-                <span>${total().toLocaleString("es-MX")}</span>
+                <span>${subtotal.toLocaleString("es-MX")}</span>
               </div>
+              {discountAmount > 0 && activeDiscount && (
+                <div
+                  className="flex justify-between text-[12px]"
+                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--accent-2)" }}
+                >
+                  <span>Descuento ({activeDiscount.code})</span>
+                  <span>−${discountAmount.toLocaleString("es-MX")}</span>
+                </div>
+              )}
               <div
                 className="flex justify-between text-[12px]"
                 style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
@@ -629,7 +665,7 @@ export default function CheckoutPage() {
                   className="text-lg font-semibold"
                   style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
                 >
-                  ${(total() + SHIPPING_COST).toLocaleString("es-MX")}
+                  ${orderTotal.toLocaleString("es-MX")}
                 </span>
               </div>
             </div>

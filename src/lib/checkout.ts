@@ -91,6 +91,55 @@ function hasMappedVariant(map: Record<string, number>, color: string, size: stri
   })
 }
 
+// Extraído para que la validación de códigos de descuento reutilice
+// exactamente las mismas reglas de artículos que el checkout, sin duplicarlas.
+export function parseCheckoutItems(rawItems: unknown): {
+  items: CheckoutItemInput[]
+  issues: CheckoutValidationIssue[]
+} {
+  const issues: CheckoutValidationIssue[] = []
+  const parsedItems: CheckoutItemInput[] = []
+
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    issues.push({ field: "items", code: "required", message: "Agrega al menos un producto." })
+    return { items: parsedItems, issues }
+  }
+  if (rawItems.length > 20) {
+    issues.push({ field: "items", code: "too_many", message: "El pedido tiene demasiadas líneas." })
+    return { items: parsedItems, issues }
+  }
+
+  rawItems.forEach((rawItem, index) => {
+    const prefix = `items.${index}`
+    if (!rawItem || typeof rawItem !== "object" || Array.isArray(rawItem)) {
+      issues.push({ field: prefix, code: "invalid", message: "Artículo inválido." })
+      return
+    }
+    const item = rawItem as Record<string, unknown>
+    const productId = cleanString(item.product_id, 36)
+    const color = cleanString(item.color, 80)
+    const size = cleanString(item.size, 40)
+    const quantity = item.quantity
+    if (!productId || !UUID_PATTERN.test(productId)) {
+      issues.push({ field: `${prefix}.product_id`, code: "invalid", message: "Producto inválido." })
+    }
+    if (!Number.isInteger(quantity) || Number(quantity) <= 0 || Number(quantity) > MAX_ITEM_QUANTITY) {
+      issues.push({
+        field: `${prefix}.quantity`,
+        code: "invalid_quantity",
+        message: `La cantidad debe ser un entero entre 1 y ${MAX_ITEM_QUANTITY}.`,
+      })
+    }
+    if (!color) issues.push({ field: `${prefix}.color`, code: "required", message: "Selecciona un color." })
+    if (!size) issues.push({ field: `${prefix}.size`, code: "required", message: "Selecciona una talla." })
+    if (productId && UUID_PATTERN.test(productId) && color && size && Number.isInteger(quantity)) {
+      parsedItems.push({ product_id: productId, quantity: Number(quantity), color, size })
+    }
+  })
+
+  return { items: parsedItems, issues }
+}
+
 export function parseCheckoutBody(body: unknown): CheckoutParseResult {
   const issues: CheckoutValidationIssue[] = []
   if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -98,41 +147,9 @@ export function parseCheckoutBody(body: unknown): CheckoutParseResult {
   }
 
   const raw = body as Record<string, unknown>
-  const rawItems = raw.items
-  const parsedItems: CheckoutItemInput[] = []
-  if (!Array.isArray(rawItems) || rawItems.length === 0) {
-    issues.push({ field: "items", code: "required", message: "Agrega al menos un producto." })
-  } else if (rawItems.length > 20) {
-    issues.push({ field: "items", code: "too_many", message: "El pedido tiene demasiadas líneas." })
-  } else {
-    rawItems.forEach((rawItem, index) => {
-      const prefix = `items.${index}`
-      if (!rawItem || typeof rawItem !== "object" || Array.isArray(rawItem)) {
-        issues.push({ field: prefix, code: "invalid", message: "Artículo inválido." })
-        return
-      }
-      const item = rawItem as Record<string, unknown>
-      const productId = cleanString(item.product_id, 36)
-      const color = cleanString(item.color, 80)
-      const size = cleanString(item.size, 40)
-      const quantity = item.quantity
-      if (!productId || !UUID_PATTERN.test(productId)) {
-        issues.push({ field: `${prefix}.product_id`, code: "invalid", message: "Producto inválido." })
-      }
-      if (!Number.isInteger(quantity) || Number(quantity) <= 0 || Number(quantity) > MAX_ITEM_QUANTITY) {
-        issues.push({
-          field: `${prefix}.quantity`,
-          code: "invalid_quantity",
-          message: `La cantidad debe ser un entero entre 1 y ${MAX_ITEM_QUANTITY}.`,
-        })
-      }
-      if (!color) issues.push({ field: `${prefix}.color`, code: "required", message: "Selecciona un color." })
-      if (!size) issues.push({ field: `${prefix}.size`, code: "required", message: "Selecciona una talla." })
-      if (productId && UUID_PATTERN.test(productId) && color && size && Number.isInteger(quantity)) {
-        parsedItems.push({ product_id: productId, quantity: Number(quantity), color, size })
-      }
-    })
-  }
+  const parsedItemsResult = parseCheckoutItems(raw.items)
+  const parsedItems = parsedItemsResult.items
+  issues.push(...parsedItemsResult.issues)
 
   const rawCustomer = raw.customer && typeof raw.customer === "object" && !Array.isArray(raw.customer)
     ? raw.customer as Record<string, unknown>
