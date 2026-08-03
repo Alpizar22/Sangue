@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getPrintfulProduct, getPrintfulCatalogProduct } from "@/lib/printful"
+import { hasValidAdminSession } from "@/lib/adminAuth"
 
 const EXCHANGE_RATE = 17.5 // solo se aplica si Printful devuelve costos en USD — ver getCostInMxn()
 const DEFAULT_MARGIN = 2.75
@@ -37,6 +38,9 @@ function roundUpTo10(n: number): number {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await hasValidAdminSession())) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+  }
   try {
     const { id, margin } = await req.json()
     if (!id || isNaN(Number(id))) {
@@ -118,6 +122,7 @@ export async function POST(req: NextRequest) {
       // Columnas printful_* podrían no existir aún — reintenta sin ellas
       if (error.message?.includes("printful_")) {
         const { printful_product_id: _pid, printful_variant_id: _vid, printful_variant_map: _map, ...rowWithout } = row
+        void _pid; void _vid; void _map
         const { error: err2 } = await supabase.from("products").upsert(rowWithout, { onConflict: "shein_product_id" })
         if (err2) return NextResponse.json({ error: err2.message }, { status: 500 })
       } else {

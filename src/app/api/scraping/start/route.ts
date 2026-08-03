@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/server"
 import { scrapSheinCategory, scrapSheinProduct, toTheiaProduct } from "@/lib/scraper/shein"
+import { hasValidAdminSession } from "@/lib/adminAuth"
 
 export async function POST(req: NextRequest) {
+  if (!(await hasValidAdminSession())) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+  }
+
   try {
     const {
       url,

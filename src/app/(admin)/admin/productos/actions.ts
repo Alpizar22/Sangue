@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@supabase/supabase-js"
+import { requireValidAdminSession } from "@/lib/adminAuth"
 
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL"]
 const MARKUP = 2.5
@@ -15,6 +16,7 @@ function adminSupabase() {
 export async function createProduct(
   formData: FormData
 ): Promise<{ error: string | null }> {
+  await requireValidAdminSession()
   const supabase = adminSupabase()
 
   const title = String(formData.get("title") ?? "").trim()
@@ -76,6 +78,7 @@ export async function createProduct(
 }
 
 export async function deleteProduct(id: string): Promise<{ error: string | null }> {
+  await requireValidAdminSession()
   const supabase = adminSupabase()
   const { error } = await supabase.from("products").delete().eq("id", id)
   if (error) {
@@ -89,6 +92,7 @@ export async function updateProduct(
   id: string,
   formData: FormData
 ): Promise<{ error: string | null }> {
+  await requireValidAdminSession()
   const supabase = adminSupabase()
 
   const title = String(formData.get("title") ?? "").trim()
@@ -153,6 +157,7 @@ export async function updateProductPresentation(
   id: string,
   formData: FormData
 ): Promise<{ error: string | null }> {
+  await requireValidAdminSession()
   const supabase = adminSupabase()
 
   const displayName = String(formData.get("display_name") ?? "").trim() || null

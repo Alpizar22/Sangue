@@ -39,6 +39,10 @@ export interface Product {
   chapter?: string | null
   story?: string | null
   editorial_images?: string[] | null
+  source?: string | null
+  printful_product_id?: number | null
+  printful_variant_id?: number | null
+  printful_variant_map?: Record<string, number> | null
 }
 
 export interface CartItem {
@@ -64,6 +68,7 @@ export interface ShippingAddress {
   floor?: string
   apartment?: string
   colonia?: string
+  municipality?: string
   city: string
   province: string
   postal_code: string
@@ -85,8 +90,10 @@ export interface Order {
   mercadopago_preference_id: string | null
   shipping_address: ShippingAddress
   notes: string | null
-  supplier_order_id: string | null   // ID del pedido en Shein
+  supplier_order_id: string | null   // ID de la orden activa en Printful
   tracking_number: string | null
+  public_access_token?: string | null
+  fulfillment_claimed_at?: string | null
 }
 
 export interface OrderItem {

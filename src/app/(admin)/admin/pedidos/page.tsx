@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
 import type { Order } from "@/types"
 import Link from "next/link"
 
@@ -25,7 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default async function AdminOrdersPage() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data: orders } = await supabase
     .from("orders")
     .select("*, customer:customers(name, email)")
@@ -35,8 +35,8 @@ export default async function AdminOrdersPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Pedidos</h1>
 
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto border bg-white">
+        <table className="min-w-[860px] w-full text-sm">
           <thead>
             <tr className="text-left text-gray-500 border-b bg-gray-50">
               <th className="px-4 py-3">ID</th>
@@ -50,13 +50,13 @@ export default async function AdminOrdersPage() {
           </thead>
           <tbody>
             {orders?.map((o: Order & { customer?: { name: string; email: string } }) => (
-              <tr key={o.id} className="border-b last:border-0 hover:bg-gray-50">
+              <tr key={o.id} className={`border-b last:border-0 hover:bg-gray-50 ${o.status === "processing" && !o.supplier_order_id ? "bg-amber-50" : ""}`}>
                 <td className="px-4 py-3 font-mono text-xs">{o.id.slice(0, 8)}…</td>
                 <td className="px-4 py-3">
                   <div>{o.customer?.name || "—"}</div>
                   <div className="text-gray-400 text-xs">{o.customer?.email}</div>
                 </td>
-                <td className="px-4 py-3 font-semibold">${o.total?.toLocaleString("es-AR")}</td>
+                <td className="px-4 py-3 font-semibold">${Number(o.total).toLocaleString("es-MX")} MXN</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[o.status] || "bg-gray-100"}`}>
                     {STATUS_LABELS[o.status] || o.status}
@@ -66,11 +66,13 @@ export default async function AdminOrdersPage() {
                   {o.supplier_order_id ? (
                     <span className="text-xs text-green-600 font-medium">{o.supplier_order_id}</span>
                   ) : (
-                    <span className="text-xs text-gray-400">No enviado</span>
+                    <span className={`text-xs ${o.status === "processing" ? "font-medium text-amber-700" : "text-gray-400"}`}>
+                      {o.status === "processing" ? "Requiere revisión" : "No enviado"}
+                    </span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-gray-500 text-xs">
-                  {new Date(o.created_at).toLocaleDateString("es-AR")}
+                  {new Date(o.created_at).toLocaleDateString("es-MX")}
                 </td>
                 <td className="px-4 py-3">
                   <Link href={`/admin/pedidos/${o.id}`} className="text-blue-600 hover:underline text-xs">

@@ -1,16 +1,20 @@
+import { createHmac, timingSafeEqual } from "node:crypto"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { createHmac } from "crypto"
-import { getMercadoPagoClient } from "@/lib/mercadopago/client"
 import { Payment } from "mercadopago"
-import { createPrintfulOrder, buildPrintfulOrderInput } from "@/lib/printful"
+import { getMercadoPagoClient } from "@/lib/mercadopago/client"
+import { buildPrintfulOrderInput, createPrintfulOrder } from "@/lib/printful"
 import {
   buildBlockedFulfillmentUpdate,
   preparePrintfulFulfillment,
   type PrintfulProductInfo,
   type StoredFulfillmentItem,
 } from "@/lib/printfulVariant"
+import { canAcceptUnsignedWebhook, toPrintfulExternalId } from "@/lib/payment"
+import { appendUniqueOrderNote, formatOperationalNote } from "@/lib/orderNotes"
 import type { ShippingAddress } from "@/types"
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -19,159 +23,220 @@ function adminSupabase() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
-// Verifica la firma HMAC-SHA256 que MercadoPago envía en x-signature
-// https://www.mercadopago.com.mx/developers/es/docs/your-integrations/notifications/webhooks
-function verifyMPSignature(req: NextRequest, rawBody: string, dataId: string): boolean {
+function verifyMPSignature(req: NextRequest, dataId: string): boolean {
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET
   if (!secret) {
-    console.warn("[mp-webhook] MERCADOPAGO_WEBHOOK_SECRET no configurado — omitiendo validación de firma")
+    if (!canAcceptUnsignedWebhook(process.env.NODE_ENV)) {
+      console.error("[mp-webhook] Firma obligatoria no configurada en producción")
+      return false
+    }
+    console.warn("[mp-webhook] Modo local explícito: firma no configurada")
     return true
   }
 
-  const xSignature = req.headers.get("x-signature") ?? ""
-  const xRequestId = req.headers.get("x-request-id") ?? ""
+  const signature = req.headers.get("x-signature") ?? ""
+  const requestId = req.headers.get("x-request-id") ?? ""
+  const timestamp = signature.match(/(?:^|,)\s*ts=([^,]+)/)?.[1]
+  const receivedHex = signature.match(/(?:^|,)\s*v1=([^,]+)/)?.[1]
+  if (!timestamp || !receivedHex || !/^[a-f0-9]{64}$/i.test(receivedHex)) return false
 
-  const tsMatch = xSignature.match(/ts=([^,]+)/)
-  const v1Match = xSignature.match(/v1=([^,]+)/)
-  if (!tsMatch || !v1Match) {
-    console.error("[mp-webhook] Header x-signature malformado:", xSignature)
-    return false
-  }
+  const manifest = `id:${dataId};request-id:${requestId};ts:${timestamp};`
+  const expected = Buffer.from(createHmac("sha256", secret).update(manifest).digest("hex"), "utf8")
+  const received = Buffer.from(receivedHex.toLowerCase(), "utf8")
+  return expected.length === received.length && timingSafeEqual(expected, received)
+}
 
-  const ts = tsMatch[1]
-  const v1 = v1Match[1]
-  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`
-  const expected = createHmac("sha256", secret).update(manifest).digest("hex")
-
-  if (expected !== v1) {
-    console.error("[mp-webhook] Firma inválida")
-    return false
-  }
-  return true
+async function recordPrintfulFailure(
+  supabase: ReturnType<typeof adminSupabase>,
+  orderId: string,
+  existingNotes: string | null,
+  type: "PRINTFUL_API_FAILED" | "PRINTFUL_RECONCILIATION_REQUIRED",
+  details: Record<string, unknown>
+) {
+  const note = formatOperationalNote(type, details)
+  const { error } = await supabase
+    .from("orders")
+    .update({ status: "processing", notes: appendUniqueOrderNote(existingNotes, note) })
+    .eq("id", orderId)
+  if (error) console.error(`[mp-webhook] No se pudo registrar ${type} para ${orderId}:`, error.code)
 }
 
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text()
-    let body: { type: string; data: { id: string } }
-
+    let body: { type?: unknown; data?: { id?: unknown } }
     try {
       body = JSON.parse(rawBody)
     } catch {
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
     }
 
-    const { type, data } = body
-
-    if (type !== "payment") {
-      return NextResponse.json({ received: true })
-    }
-
-    // Validar firma
-    if (!verifyMPSignature(req, rawBody, data.id)) {
+    if (body.type !== "payment") return NextResponse.json({ received: true })
+    const dataId = typeof body.data?.id === "string" || typeof body.data?.id === "number"
+      ? String(body.data.id)
+      : ""
+    if (!dataId) return NextResponse.json({ error: "Invalid payment notification" }, { status: 400 })
+    if (!verifyMPSignature(req, dataId)) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
     }
 
-    const mp = getMercadoPagoClient()
-    const payment = await new Payment(mp).get({ id: data.id })
+    const payment = await new Payment(getMercadoPagoClient()).get({ id: dataId })
+    if (!payment || payment.status !== "approved") return NextResponse.json({ received: true })
 
-    if (!payment || payment.status !== "approved") {
+    const orderId = payment.external_reference ?? ""
+    if (!UUID_PATTERN.test(orderId)) {
+      console.error("[mp-webhook] external_reference inválida para pago:", payment.id)
       return NextResponse.json({ received: true })
     }
 
-    const orderId = payment.external_reference
-    if (!orderId) {
-      console.warn("[mp-webhook] Sin external_reference en pago:", payment.id)
-      return NextResponse.json({ received: true })
-    }
-
+    const paymentId = String(payment.id)
+    const currency = payment.currency_id ?? ""
+    const amount = Number(payment.transaction_amount)
     const supabase = adminSupabase()
 
-    // 1. Marcar pedido como pagado
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .update({
-        status: "paid",
-        mercadopago_payment_id: String(payment.id),
-      })
-      .eq("id", orderId)
-      .select("*, customer:customers(name, phone, email)")
-      .single()
+    // La RPC inserta el evento único, bloquea la fila del pedido y reclama
+    // fulfillment en una sola transacción. Solo "claimed" puede continuar.
+    const { data: claimResult, error: claimError } = await supabase.rpc(
+      "claim_mercadopago_fulfillment",
+      {
+        p_order_id: orderId,
+        p_event_id: paymentId,
+        p_payment_id: paymentId,
+        p_amount: Number.isFinite(amount) ? amount : null,
+        p_currency: currency,
+      }
+    )
 
-    if (orderError || !order) {
-      console.error("[mp-webhook] Error actualizando pedido:", orderError)
-      return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    if (claimError) {
+      console.error(`[mp-webhook] No se pudo reclamar pedido ${orderId}:`, claimError.code)
+      return NextResponse.json({ error: "Temporary processing error" }, { status: 500 })
+    }
+    if (claimResult !== "claimed") {
+      console.info(`[mp-webhook] Evento ${paymentId} finalizado sin fulfillment: ${claimResult}`)
+      return NextResponse.json({ received: true })
     }
 
-    console.log(`[mp-webhook] Pedido ${orderId} marcado como pagado`)
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .select("*, customer:customers(name, phone, email)")
+      .eq("id", orderId)
+      .single()
+    if (orderError || !order) {
+      console.error(`[mp-webhook] Pedido reclamado no disponible ${orderId}:`, orderError?.code)
+      return NextResponse.json({ error: "Temporary processing error" }, { status: 500 })
+    }
 
-    // 2. Crear orden en Printful
     const customer = order.customer as { name: string; phone: string | null; email: string | null } | null
     const shippingAddress = order.shipping_address as ShippingAddress
-    try {
-      const storedItems = (order.items ?? []) as StoredFulfillmentItem[]
-      const productIds = storedItems.map((i) => i.product_id).filter(Boolean)
+    const storedItems = (order.items ?? []) as StoredFulfillmentItem[]
+    const productIds = [...new Set(storedItems.map((item) => item.product_id).filter(Boolean))]
+    const { data: productRows, error: productError } = await supabase
+      .from("products")
+      .select("id, printful_variant_id, printful_variant_map, source")
+      .in("id", productIds)
+    if (productError) {
+      console.error(`[mp-webhook] No se pudo consultar catálogo para ${orderId}:`, productError.code)
+      await recordPrintfulFailure(supabase, orderId, order.notes, "PRINTFUL_API_FAILED", {
+        stage: "load_products",
+        reason: "catalog_unavailable",
+      })
+      await supabase
+        .from("payment_events")
+        .update({ status: "catalog_failed" })
+        .eq("provider", "mercadopago")
+        .eq("event_id", paymentId)
+      return NextResponse.json({ received: true })
+    }
 
-      const { data: productRows } = await supabase
-        .from("products")
-        .select("id, printful_variant_id, printful_variant_map, source")
-        .in("id", productIds)
-
-      const printfulProductMap: Record<string, PrintfulProductInfo> = {}
-      for (const p of productRows ?? []) {
-        if (p.source === "printful") {
-          printfulProductMap[p.id] = {
-            printful_variant_id: p.printful_variant_id,
-            printful_variant_map: p.printful_variant_map,
-          }
+    const printfulProductMap: Record<string, PrintfulProductInfo> = {}
+    for (const product of productRows ?? []) {
+      if (product.source === "printful") {
+        printfulProductMap[product.id] = {
+          printful_variant_id: product.printful_variant_id,
+          printful_variant_map: product.printful_variant_map,
         }
       }
+    }
 
-      const customerPhone = (customer?.phone ?? "").replace(/\D/g, "") || "0000000000"
+    const preparation = preparePrintfulFulfillment(storedItems, printfulProductMap)
+    if (!preparation.ok) {
+      console.error(
+        `[mp-webhook] Fulfillment Printful bloqueado para pedido ${orderId}:`,
+        JSON.stringify({ orderId, errors: preparation.errors })
+      )
+      const { error } = await supabase
+        .from("orders")
+        .update(buildBlockedFulfillmentUpdate(order.notes, preparation))
+        .eq("id", orderId)
+      if (error) console.error(`[mp-webhook] No se pudo persistir bloqueo ${orderId}:`, error.code)
+      await supabase
+        .from("payment_events")
+        .update({ status: "variant_blocked" })
+        .eq("provider", "mercadopago")
+        .eq("event_id", paymentId)
+      return NextResponse.json({ received: true })
+    }
 
-      // El fulfillment es atómico: primero se resuelven todas las variantes.
-      // Si falla una sola, no se envía ningún artículo a Printful.
-      const preparation = preparePrintfulFulfillment(storedItems, printfulProductMap)
-      if (!preparation.ok) {
-        console.error(
-          `[mp-webhook] Fulfillment Printful bloqueado para pedido ${orderId}:`,
-          JSON.stringify({ orderId, errors: preparation.errors })
-        )
+    const externalId = toPrintfulExternalId(orderId)
+    const printfulInput = buildPrintfulOrderInput({
+      externalId,
+      customerName: customer?.name ?? "Cliente",
+      customerEmail: customer?.email ?? "",
+      customerPhone: (customer?.phone ?? "").replace(/\D/g, "") || "0000000000",
+      shippingAddress,
+      items: preparation.items,
+      subtotal: Number(order.subtotal),
+      shippingCost: Number(order.shipping_cost),
+      total: Number(order.total),
+    })
 
-        await supabase
-          .from("orders")
-          .update(buildBlockedFulfillmentUpdate(order.notes, preparation))
-          .eq("id", orderId)
-
-        return NextResponse.json({ received: true })
-      }
-
-      const printfulInput = buildPrintfulOrderInput({
-        customerName: customer?.name ?? "Cliente",
-        customerEmail: customer?.email ?? "",
-        customerPhone,
-        shippingAddress,
-        items: preparation.items,
-        subtotal: order.subtotal,
-        shippingCost: order.shipping_cost,
-        total: order.total,
+    if (!printfulInput) {
+      await recordPrintfulFailure(supabase, orderId, order.notes, "PRINTFUL_API_FAILED", {
+        stage: "build_order",
+        reason: "empty_items",
       })
+      return NextResponse.json({ received: true })
+    }
 
-      if (printfulInput) {
-        const printfulResult = await createPrintfulOrder(printfulInput)
-        await supabase
-          .from("orders")
-          .update({ status: "ordered_to_supplier", supplier_order_id: String(printfulResult.id) })
-          .eq("id", orderId)
-        console.log(`[mp-webhook] Orden Printful ${printfulResult.id} creada para pedido ${orderId}`)
-      } else {
-        await supabase.from("orders").update({ status: "processing" }).eq("id", orderId)
+    let printfulResult
+    try {
+      printfulResult = await createPrintfulOrder(printfulInput)
+    } catch (error) {
+      console.error(`[mp-webhook] Error Printful para pedido ${orderId}:`, error)
+      await recordPrintfulFailure(supabase, orderId, order.notes, "PRINTFUL_API_FAILED", {
+        stage: "create_order",
+        external_id: externalId,
+        reason: error instanceof Error ? error.message.slice(0, 500) : "unknown_error",
+      })
+      await supabase
+        .from("payment_events")
+        .update({ status: "printful_failed", detail: { external_id: externalId } })
+        .eq("provider", "mercadopago")
+        .eq("event_id", paymentId)
+      return NextResponse.json({ received: true })
+    }
+
+    const { data: finalized, error: finalizeError } = await supabase.rpc(
+      "finalize_printful_fulfillment",
+      {
+        p_order_id: orderId,
+        p_event_id: paymentId,
+        p_payment_id: paymentId,
+        p_supplier_order_id: String(printfulResult.id),
       }
-    } catch (printfulErr) {
-      // Pago confirmado aunque falle la creación de la orden con Printful —
-      // Ximena puede reintentar desde el panel
-      console.error(`[mp-webhook] Error Printful para pedido ${orderId}:`, printfulErr)
-      await supabase.from("orders").update({ status: "processing" }).eq("id", orderId)
+    )
+    if (finalizeError || finalized !== true) {
+      console.error(
+        `[mp-webhook] RECONCILIACIÓN REQUERIDA pedido=${orderId} printful=${printfulResult.id} external=${externalId}`,
+        finalizeError?.code
+      )
+      await recordPrintfulFailure(supabase, orderId, order.notes, "PRINTFUL_RECONCILIATION_REQUIRED", {
+        stage: "save_supplier_order",
+        printful_order_id: String(printfulResult.id),
+        external_id: externalId,
+      })
+    } else {
+      console.log(`[mp-webhook] Orden Printful ${printfulResult.id} creada para pedido ${orderId}`)
     }
 
     return NextResponse.json({ received: true })

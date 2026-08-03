@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@supabase/supabase-js"
+import { requireValidAdminSession } from "@/lib/adminAuth"
 
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -11,6 +12,7 @@ function adminSupabase() {
 }
 
 export async function createPricingRule(formData: FormData): Promise<void> {
+  await requireValidAdminSession()
   const supabase = adminSupabase()
 
   const name = String(formData.get("name") ?? "").trim()
@@ -38,12 +40,14 @@ export async function createPricingRule(formData: FormData): Promise<void> {
 }
 
 export async function togglePricingRule(id: string, active: boolean): Promise<void> {
+  await requireValidAdminSession()
   const supabase = adminSupabase()
   await supabase.from("pricing_rules").update({ active }).eq("id", id)
   revalidatePath("/admin/precios")
 }
 
 export async function deletePricingRule(id: string): Promise<void> {
+  await requireValidAdminSession()
   const supabase = adminSupabase()
   await supabase.from("pricing_rules").delete().eq("id", id)
   revalidatePath("/admin/precios")

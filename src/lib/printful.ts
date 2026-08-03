@@ -180,6 +180,7 @@ export interface PrintfulOrderItem {
 }
 
 export interface PrintfulOrderInput {
+  external_id?: string
   recipient: {
     name: string
     address1: string
@@ -203,14 +204,26 @@ export interface PrintfulOrderResult {
   [key: string]: unknown
 }
 
+export function buildPrintfulAddress2(shippingAddress: ShippingAddress, maxLength = 100): string | undefined {
+  const parts = [
+    shippingAddress.floor?.trim() ? `Interior ${shippingAddress.floor.trim()}` : "",
+    shippingAddress.colonia?.trim() ? `Col. ${shippingAddress.colonia.trim()}` : "",
+  ].filter(Boolean)
+  if (parts.length === 0) return undefined
+  return parts.join(", ").replace(/\s+/g, " ").slice(0, maxLength).trim()
+}
+
 export async function createPrintfulOrder(input: PrintfulOrderInput): Promise<PrintfulOrderResult> {
-  return printfulPost<PrintfulOrderResult>("/orders", input)
+  const { confirm, ...body } = input
+  const query = confirm ? "?confirm=1" : ""
+  return printfulPost<PrintfulOrderResult>(`/orders${query}`, body)
 }
 
 // Mapea nuestro pedido → orden Printful. Cada línea usa el printful_variant_id
 // guardado en el producto (variante única por producto — no distingue
 // talla/color elegido en el pedido; ver printful_variant_map para eso).
 export function buildPrintfulOrderInput(params: {
+  externalId?: string
   customerName: string
   customerEmail: string
   customerPhone: string
@@ -220,16 +233,17 @@ export function buildPrintfulOrderInput(params: {
   shippingCost: number
   total: number
 }): PrintfulOrderInput | null {
-  const { customerName, customerEmail, customerPhone, shippingAddress, items, subtotal, shippingCost, total } = params
+  const { externalId, customerName, customerEmail, customerPhone, shippingAddress, items, subtotal, shippingCost, total } = params
 
   if (items.length === 0) return null
 
   return {
+    external_id: externalId,
     recipient: {
       name: customerName,
       address1: `${shippingAddress.street} ${shippingAddress.number}`.trim(),
-      address2: shippingAddress.colonia || shippingAddress.floor || undefined,
-      city: shippingAddress.city,
+      address2: buildPrintfulAddress2(shippingAddress),
+      city: shippingAddress.city || shippingAddress.municipality || "",
       state_code: shippingAddress.province,
       country_code: "MX",
       zip: shippingAddress.postal_code,

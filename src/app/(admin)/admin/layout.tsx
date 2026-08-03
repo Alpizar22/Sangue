@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import AdminSidebar from "@/components/admin/Sidebar"
 import type { Metadata } from "next"
+import { isValidAdminSession } from "@/lib/adminSession"
 
 export const metadata: Metadata = {
   title: { default: "Admin — Theia", template: "%s | Admin Theia" },
@@ -19,12 +20,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const cookieStore = await cookies()
   const session = cookieStore.get("admin_session")
 
-  if (!session?.value) redirect("/admin/login")
+  if (!(await isValidAdminSession(session?.value, process.env.ADMIN_PASSWORD))) redirect("/admin/login")
 
   return (
     <div className="min-h-screen flex bg-gray-50">
       <AdminSidebar />
-      <main className="flex-1 p-6 overflow-auto">{children}</main>
+      <main className="min-w-0 flex-1 overflow-auto p-3 sm:p-6">{children}</main>
     </div>
   )
 }
