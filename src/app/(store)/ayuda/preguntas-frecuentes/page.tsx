@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { CONTACT_EMAIL, CONTACT_EMAIL_URL, WHATSAPP_DISPLAY, WHATSAPP_URL } from "@/lib/contact"
 
 export const metadata: Metadata = {
   title: "Preguntas Frecuentes — Theia",
@@ -45,12 +46,12 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
         Si pasaron más de 45 días desde el despacho sin que tu pedido llegue, te emitimos un
         reembolso completo. Escríbenos por{" "}
         <a
-          href="https://wa.me/5213312345678"
+          href={WHATSAPP_URL}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "var(--accent-2)", textDecoration: "underline" }}
         >
-          WhatsApp
+          WhatsApp · {WHATSAPP_DISPLAY}
         </a>{" "}
         con tu número de orden.
       </>
@@ -96,12 +97,12 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
         En cada página de producto encontrarás nuestra guía de tallas con medidas en centímetros
         (busto, cintura, cadera). Si sigues con dudas, escríbenos por{" "}
         <a
-          href="https://wa.me/5213312345678"
+          href={WHATSAPP_URL}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "var(--accent-2)", textDecoration: "underline" }}
         >
-          WhatsApp
+          WhatsApp · {WHATSAPP_DISPLAY}
         </a>
         {" "}con tus medidas y te recomendamos la talla ideal.
       </>
@@ -177,16 +178,16 @@ export default function FAQPage() {
           >
             Escríbenos por{" "}
             <a
-              href="https://wa.me/5213312345678"
+              href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: "var(--accent-2)", textDecoration: "underline" }}
             >
-              WhatsApp
+              WhatsApp · {WHATSAPP_DISPLAY}
             </a>
             {" "}o a{" "}
-            <a href="mailto:nasusagency@gmail.com" style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
-              nasusagency@gmail.com
+            <a href={CONTACT_EMAIL_URL} style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
+              {CONTACT_EMAIL}
             </a>
             . Respondemos Lun–Vie · 10:00–18:00 hrs.
           </p>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Eyebrow, Divider } from "@/components/store/Editorial"
+import { CONTACT_EMAIL, CONTACT_EMAIL_URL } from "@/lib/contact"
 
 export const metadata: Metadata = { title: "Filosofía — Theia" }
 export const dynamic = "force-static"
@@ -70,7 +71,7 @@ export default function FilosofiaPage() {
           style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
         >
           ¿Preguntas sobre una pieza en particular? Escríbenos a{" "}
-          <a href="mailto:hola@theia.mx" style={{ color: "var(--accent-2)" }}>hola@theia.mx</a>.
+          <a href={CONTACT_EMAIL_URL} style={{ color: "var(--accent-2)" }}>{CONTACT_EMAIL}</a>.
         </p>
 
       </div>

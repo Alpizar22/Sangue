@@ -5,6 +5,7 @@ import type { Product } from "@/types"
 import ProductGallery from "./ProductGallery"
 import AddToCartButton from "./AddToCartButton"
 import { getDisplayName, getSubtitle, getDisplayImages } from "@/lib/presentation"
+import { CONTACT_EMAIL, CONTACT_EMAIL_URL, WHATSAPP_DISPLAY, WHATSAPP_URL } from "@/lib/contact"
 import { Truck, ShieldCheck } from "lucide-react"
 
 interface Props {
@@ -19,8 +20,6 @@ function extractMaterial(desc: string): string | null {
   }
   return null
 }
-
-const WHATSAPP = "https://wa.me/5213312345678"
 
 const SIZE_GUIDE = [
   { talla: "XS",  busto: "82",  cintura: "64", cadera: "87"  },
@@ -245,12 +244,12 @@ export default function ProductInteractive({ product }: Props) {
             <p>Aceptamos cambios dentro de los 7 días posteriores a la recepción, con la prenda sin uso y en su empaque original.</p>
             <p>
               Para iniciar un cambio escríbenos a{" "}
-              <a href="mailto:hola@theia.mx" style={{ color: "var(--accent-2)" }}>
-                hola@theia.mx
+              <a href={CONTACT_EMAIL_URL} style={{ color: "var(--accent-2)" }}>
+                {CONTACT_EMAIL}
               </a>{" "}
               o por{" "}
-              <a href={WHATSAPP} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-2)" }}>
-                WhatsApp
+              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-2)" }}>
+                WhatsApp · {WHATSAPP_DISPLAY}
               </a>{" "}
               con tu número de pedido.
             </p>

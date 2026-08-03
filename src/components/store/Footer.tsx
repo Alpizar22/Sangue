@@ -1,5 +1,13 @@
 import Link from "next/link"
 import { Mail, MessageCircle } from "lucide-react"
+import {
+  CONTACT_EMAIL,
+  CONTACT_EMAIL_URL,
+  INSTAGRAM_HANDLE,
+  INSTAGRAM_URL,
+  WHATSAPP_DISPLAY,
+  WHATSAPP_URL,
+} from "@/lib/contact"
 
 function InstagramIcon() {
   return (
@@ -7,14 +15,6 @@ function InstagramIcon() {
       <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
       <circle cx="12" cy="12" r="4" />
       <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
-    </svg>
-  )
-}
-
-function TikTokIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.34-6.34V8.69a8.18 8.18 0 004.77 1.52V6.74a4.85 4.85 0 01-1-.05z" />
     </svg>
   )
 }
@@ -46,24 +46,15 @@ export default function Footer() {
           </p>
           <div className="flex items-center gap-3">
             <a
-              href="https://instagram.com/theia.lat"
+              href={INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-opacity hover:opacity-100"
+              className="flex items-center gap-2 text-[12px] transition-opacity hover:opacity-100"
               style={{ color: "var(--ink)", opacity: 0.4 }}
-              aria-label="Instagram"
+              aria-label="Instagram de Theia, abre en una nueva pestaña"
             >
               <InstagramIcon />
-            </a>
-            <a
-              href="https://tiktok.com/@theia.lat"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition-opacity hover:opacity-100"
-              style={{ color: "var(--ink)", opacity: 0.4 }}
-              aria-label="TikTok"
-            >
-              <TikTokIcon />
+              {INSTAGRAM_HANDLE}
             </a>
           </div>
         </div>
@@ -113,22 +104,22 @@ export default function Footer() {
             style={{ fontFamily: "var(--font-inter)" }}
           >
             <a
-              href="mailto:nasusagency@gmail.com"
+              href={CONTACT_EMAIL_URL}
               className="flex items-center gap-2 transition-colors hover:text-[var(--ink)]"
               style={{ color: "var(--text-secondary)" }}
             >
               <Mail size={14} strokeWidth={1.5} />
-              nasusagency@gmail.com
+              {CONTACT_EMAIL}
             </a>
             <a
-              href="https://wa.me/5213312345678?text=Hola%2C+tengo+una+pregunta+sobre+mi+pedido+en+Theia"
+              href={WHATSAPP_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 transition-colors hover:text-[var(--ink)]"
               style={{ color: "var(--text-secondary)" }}
             >
               <MessageCircle size={14} strokeWidth={1.5} />
-              WhatsApp
+              {WHATSAPP_DISPLAY}
             </a>
             <p className="text-[12px]" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>
               Lun–Vie · 10:00–18:00 hrs

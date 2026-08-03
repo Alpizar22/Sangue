@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { CheckCircle2, PackageSearch, XCircle, MessageCircle, Mail } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { CONTACT_EMAIL, CONTACT_EMAIL_URL, WHATSAPP_DISPLAY, WHATSAPP_URL } from "@/lib/contact"
 
 export const metadata: Metadata = {
   title: "Devoluciones y Cambios — Theia",
@@ -116,7 +117,7 @@ export default function DevolucionesPage() {
             </p>
             <div className="space-y-5">
               <Step n={1} title="Contáctanos dentro de los 7 días de recibido">
-                <p>Por WhatsApp al número que aparece en el footer o escríbenos a nasusagency@gmail.com.</p>
+                <p>Por WhatsApp al {WHATSAPP_DISPLAY} o escríbenos a {CONTACT_EMAIL}.</p>
               </Step>
               <Step n={2} title="Incluye tu número de orden y foto del problema">
                 <p>
@@ -153,22 +154,22 @@ export default function DevolucionesPage() {
             </p>
             <div className="space-y-2">
               <a
-                href="https://wa.me/5213312345678?text=Hola%2C+tengo+un+problema+con+mi+pedido"
+                href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-[12px] transition-opacity hover:opacity-80"
                 style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
               >
                 <MessageCircle size={14} strokeWidth={1.5} />
-                WhatsApp (respuesta más rápida)
+                WhatsApp · {WHATSAPP_DISPLAY}
               </a>
               <a
-                href="mailto:nasusagency@gmail.com?subject=Reporte%20pedido"
+                href={CONTACT_EMAIL_URL}
                 className="flex items-center gap-2 text-[12px] transition-opacity hover:opacity-80"
                 style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
               >
                 <Mail size={14} strokeWidth={1.5} />
-                nasusagency@gmail.com
+                {CONTACT_EMAIL}
               </a>
             </div>
           </div>

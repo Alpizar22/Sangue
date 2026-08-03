@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { CONTACT_EMAIL, CONTACT_EMAIL_URL, WHATSAPP_DISPLAY, WHATSAPP_URL } from "@/lib/contact"
 
 export const metadata: Metadata = {
   title: "Política de Envíos — Theia",
@@ -155,16 +156,16 @@ export default function EnviosPage() {
             >
               Escríbenos por{" "}
               <a
-                href="https://wa.me/5213312345678"
+                href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: "var(--accent-2)", textDecoration: "underline" }}
               >
-                WhatsApp
+                WhatsApp · {WHATSAPP_DISPLAY}
               </a>
               {" "}o a{" "}
-              <a href="mailto:hola@theia.lat" style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
-                hola@theia.lat
+              <a href={CONTACT_EMAIL_URL} style={{ color: "var(--accent-2)", textDecoration: "underline" }}>
+                {CONTACT_EMAIL}
               </a>
               . Respondemos Lun–Vie · 10:00–18:00 hrs.
             </p>
