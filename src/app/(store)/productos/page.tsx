@@ -1,8 +1,10 @@
+import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import type { Metadata } from "next"
 import type { Product } from "@/types"
 import ProductGrid from "@/components/store/ProductGrid"
-import { HERO } from "@/lib/editorial"
+import { Eyebrow } from "@/components/store/Editorial"
+import styles from "@/components/store/Catalog.module.css"
 
 export const revalidate = 60
 
@@ -14,113 +16,200 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 }
 
 export default async function ProductosPage({ searchParams }: { searchParams: SearchParams }) {
-  const { categoria, q } = await searchParams
+  const params = await searchParams
+  const categoria = params.categoria?.trim() || ""
+  const search = params.q?.trim() || ""
   const supabase = await createClient()
 
-  const [{ data: allActive }, query] = await Promise.all([
+  const [typesResult, productsResult] = await Promise.all([
     supabase.from("products").select("subcategory").eq("status", "active"),
     (async () => {
-      let q_ = supabase
+      let query = supabase
         .from("products")
         .select("*")
         .eq("status", "active")
         .order("created_at", { ascending: false })
 
-      if (categoria) q_ = q_.ilike("subcategory", `%${categoria}%`)
-      if (q)         q_ = q_.ilike("title", `%${q}%`)
+      if (categoria) query = query.ilike("subcategory", `%${categoria}%`)
+      // La búsqueda permanece deliberadamente limitada al título fuente.
+      if (search) query = query.ilike("title", `%${search}%`)
 
-      return q_
+      return query
     })(),
   ])
 
-  const { data: products } = await query
-
-  // Tipos de prenda disponibles — se arman solos a partir del catálogo real,
-  // así no hay que tocar código cada vez que se agregan nuevos diseños.
-  const tipos = [...new Set((allActive ?? []).map((p) => p.subcategory).filter(Boolean))] as string[]
+  const types = [...new Set(
+    (typesResult.data ?? []).map((product) => product.subcategory).filter(Boolean)
+  )]
+    .map(String)
+    .sort((a, b) => a.localeCompare(b, "es"))
 
   return (
-    <div style={{ background: "var(--bg)", minHeight: "60vh" }}>
-      <div className="max-w-7xl mx-auto px-6 py-16 md:py-20">
+    <CatalogContent
+      products={(productsResult.data ?? []) as Product[]}
+      types={types}
+      categoria={categoria}
+      search={search}
+      hasError={Boolean(typesResult.error || productsResult.error)}
+    />
+  )
+}
 
-        {/* Encabezado editorial */}
-        <div className="max-w-xl mb-14">
-          <p
-            className="text-[11px] uppercase tracking-[0.16em] mb-4"
-            style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--text-secondary)" }}
-          >
-            {categoria ? categoria : HERO.eyebrow}
+export function CatalogContent({
+  products,
+  types,
+  categoria,
+  search,
+  hasError = false,
+}: {
+  products: Product[]
+  types: string[]
+  categoria: string
+  search: string
+  hasError?: boolean
+}) {
+  const hasActiveQuery = Boolean(categoria || search)
+
+  return (
+    <main className={styles.catalog}>
+      <header className={styles.catalogHeader}>
+        <Eyebrow>THEIA · CHAPTER I</Eyebrow>
+        <div className={styles.catalogTitleRow}>
+          <h1>Colección</h1>
+          <p>Esenciales construidos alrededor de la forma, la materia y la permanencia.</p>
+        </div>
+      </header>
+
+      <CatalogControls types={types} categoria={categoria} search={search} />
+
+      <section className={styles.results} aria-labelledby="catalog-results-title">
+        <div className={styles.resultsMeta}>
+          <p id="catalog-results-title">
+            {hasError
+              ? "Colección no disponible"
+              : `${products.length} ${products.length === 1 ? "pieza" : "piezas"}`}
           </p>
-          <h1
-            className="text-4xl md:text-5xl mb-4"
-            style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
-          >
-            {categoria ? categoria : HERO.title}
-          </h1>
-          <p
-            className="text-[14px] leading-relaxed"
-            style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
-          >
-            Una selección de esenciales construidos alrededor de la forma, la materia
-            y la permanencia.
-          </p>
+          {hasActiveQuery && !hasError && (
+            <p className={styles.querySummary}>
+              {categoria && <span>{categoria}</span>}
+              {search && <span>“{search}”</span>}
+            </p>
+          )}
         </div>
 
-        {/* Filtro por tipo de prenda */}
-        {tipos.length > 0 && (
-          <div className="flex flex-wrap gap-x-6 gap-y-2 mb-12" style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-            <a
-              href="/productos"
-              className="py-3 text-[12px] uppercase tracking-[0.06em] transition-colors"
-              style={{
-                fontFamily: "var(--font-inter)",
-                fontWeight: !categoria ? 600 : 400,
-                color: !categoria ? "var(--ink)" : "var(--text-secondary)",
-              }}
-            >
-              Todo
-            </a>
-            {tipos.map((tipo) => {
-              const active = categoria === tipo
-              return (
-                <a
-                  key={tipo}
-                  href={`/productos?categoria=${encodeURIComponent(tipo)}`}
-                  className="py-3 text-[12px] uppercase tracking-[0.06em] transition-colors"
-                  style={{
-                    fontFamily: "var(--font-inter)",
-                    fontWeight: active ? 600 : 400,
-                    color: active ? "var(--ink)" : "var(--text-secondary)",
-                  }}
-                >
-                  {tipo}
-                </a>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Grid o empty state */}
-        {products && products.length > 0 ? (
-          <ProductGrid products={products as Product[]} />
+        {hasError ? (
+          <CatalogState
+            index="—"
+            title="No pudimos cargar la colección."
+            description="Hubo un problema temporal al consultar las piezas. Intenta de nuevo en unos minutos."
+            actionHref="/productos"
+            actionLabel="Volver a intentar"
+          />
+        ) : products.length > 0 ? (
+          <ProductGrid key={`${categoria}|${search}`} products={products} />
+        ) : hasActiveQuery ? (
+          <CatalogState
+            index="00"
+            title="No encontramos piezas con estos criterios."
+            description={search
+              ? `La búsqueda actual revisa el nombre fuente del producto y no encontró coincidencias para “${search}”.`
+              : `No hay piezas disponibles actualmente en ${categoria}.`}
+            actionHref="/productos"
+            actionLabel="Ver toda la colección"
+          />
         ) : (
-          <div className="flex flex-col items-center justify-center py-28 text-center gap-3">
-            <p
-              className="text-xl"
-              style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
-            >
-              Nuevos diseños llegando pronto
-            </p>
-            <p
-              className="text-[12px]"
-              style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
-            >
-              Estamos preparando algo especial para ti
-            </p>
-          </div>
+          <CatalogState
+            index="01"
+            title="La colección está tomando forma."
+            description="Trabajamos pieza por pieza. Vuelve pronto para descubrir la próxima selección de Theia."
+            actionHref="/la-casa"
+            actionLabel="Entrar a La Casa"
+          />
         )}
+      </section>
+    </main>
+  )
+}
 
-      </div>
+function CatalogControls({
+  types,
+  categoria,
+  search,
+}: {
+  types: string[]
+  categoria: string
+  search: string
+}) {
+  return (
+    <div className={styles.controls}>
+      <nav className={styles.categoryNav} aria-label="Filtrar por tipo de prenda">
+        <Link
+          href={catalogHref({ search })}
+          aria-current={!categoria ? "page" : undefined}
+          className={!categoria ? styles.activeCategory : undefined}
+        >
+          Todo
+        </Link>
+        {types.map((type) => (
+          <Link
+            key={type}
+            href={catalogHref({ categoria: type, search })}
+            aria-current={categoria === type ? "page" : undefined}
+            className={categoria === type ? styles.activeCategory : undefined}
+          >
+            {type}
+          </Link>
+        ))}
+      </nav>
+
+      <form action="/productos" method="get" className={styles.searchForm} role="search">
+        {categoria && <input type="hidden" name="categoria" value={categoria} />}
+        <label htmlFor="catalog-search">Buscar en la colección</label>
+        <div className={styles.searchField}>
+          <input
+            id="catalog-search"
+            type="search"
+            name="q"
+            defaultValue={search}
+            placeholder="Buscar por nombre"
+            autoComplete="off"
+          />
+          <button type="submit">Buscar</button>
+        </div>
+      </form>
     </div>
   )
+}
+
+function CatalogState({
+  index,
+  title,
+  description,
+  actionHref,
+  actionLabel,
+}: {
+  index: string
+  title: string
+  description: string
+  actionHref: string
+  actionLabel: string
+}) {
+  return (
+    <div className={styles.catalogState}>
+      <p className={styles.stateIndex}>{index}</p>
+      <div>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+      <Link href={actionHref} className={styles.textLink}>{actionLabel}</Link>
+    </div>
+  )
+}
+
+function catalogHref({ categoria, search }: { categoria?: string; search?: string }) {
+  const params = new URLSearchParams()
+  if (categoria) params.set("categoria", categoria)
+  if (search) params.set("q", search)
+  const query = params.toString()
+  return query ? `/productos?${query}` : "/productos"
 }

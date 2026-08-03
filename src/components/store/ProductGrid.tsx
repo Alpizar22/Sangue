@@ -3,45 +3,31 @@
 import { useState } from "react"
 import type { Product } from "@/types"
 import ProductCard from "./ProductCard"
+import styles from "./Catalog.module.css"
 
 const PAGE_SIZE = 12
 
 export default function ProductGrid({ products }: { products: Product[] }) {
   const [visible, setVisible] = useState(PAGE_SIZE)
   const shown = products.slice(0, visible)
-  const remaining = products.length - visible
-
-  if (products.length === 0) {
-    return (
-      <p
-        className="text-center py-20 text-sm"
-        style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
-      >
-        No hay productos que coincidan con los filtros seleccionados.
-      </p>
-    )
-  }
+  const remaining = Math.max(products.length - shown.length, 0)
+  const countLayout = Math.min(shown.length, 4)
 
   return (
     <div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
-        {shown.map((product) => (
-          <ProductCard key={product.id} product={product} />
+      <ul className={styles.productGrid} data-count={countLayout} aria-label="Piezas de la colección">
+        {shown.map((product, index) => (
+          <li key={product.id}>
+            <ProductCard product={product} index={index} featured={products.length === 1} />
+          </li>
         ))}
-      </div>
+      </ul>
 
       {remaining > 0 && (
-        <div className="mt-12 text-center">
-          <button
-            onClick={() => setVisible((v) => v + PAGE_SIZE)}
-            className="px-10 py-3.5 text-[10px] uppercase tracking-[0.2em] transition-all hover:bg-[var(--ink)] hover:text-[var(--bg)]"
-            style={{
-              fontFamily: "var(--font-space-mono)",
-              border: "1px solid rgba(26,26,26,0.3)",
-              color: "var(--ink)",
-            }}
-          >
-            Ver más · {remaining} restantes
+        <div className={styles.loadMore}>
+          <button type="button" onClick={() => setVisible((current) => current + PAGE_SIZE)}>
+            Mostrar más
+            <span>{remaining} {remaining === 1 ? "pieza restante" : "piezas restantes"}</span>
           </button>
         </div>
       )}

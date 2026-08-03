@@ -1,28 +1,23 @@
+import styles from "@/components/store/Catalog.module.css"
+
 export default function ProductsLoading() {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div
-        className="h-9 w-52 rounded mb-8 animate-pulse"
-        style={{ background: "rgba(26,26,26,0.08)" }}
-      />
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="space-y-2">
-            <div
-              className="aspect-[3/4] rounded animate-pulse"
-              style={{ background: "rgba(26,26,26,0.07)" }}
-            />
-            <div
-              className="h-3 w-4/5 rounded animate-pulse"
-              style={{ background: "rgba(26,26,26,0.05)" }}
-            />
-            <div
-              className="h-3 w-2/5 rounded animate-pulse"
-              style={{ background: "rgba(26,26,26,0.05)" }}
-            />
+    <main className={styles.catalogLoading} aria-busy="true" aria-label="Cargando colección">
+      <span className={styles.srOnly} role="status">Cargando colección…</span>
+      <div className={styles.loadingHeader} aria-hidden="true">
+        <span />
+        <span />
+      </div>
+      <div className={styles.loadingControls} aria-hidden="true" />
+      <div className={styles.loadingGrid} aria-hidden="true">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className={styles.loadingCard}>
+            <div />
+            <span />
+            <span />
           </div>
         ))}
       </div>
-    </div>
+    </main>
   )
 }
