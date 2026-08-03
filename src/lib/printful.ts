@@ -16,6 +16,13 @@ function getApiKey(): string {
   return key
 }
 
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { Authorization: `Bearer ${getApiKey()}` }
+  const storeId = process.env.PRINTFUL_STORE_ID
+  if (storeId) headers["X-PF-Store-Id"] = storeId
+  return headers
+}
+
 async function handleResponse<T>(res: Response, method: string, path: string): Promise<T> {
   const raw = await res.text()
   let json: PrintfulEnvelope<T>
@@ -36,7 +43,7 @@ export async function printfulGet<T = unknown>(path: string, params?: Record<str
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v))
   }
   const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${getApiKey()}` },
+    headers: authHeaders(),
     cache: "no-store",
   })
   return handleResponse<T>(res, "GET", path)
@@ -46,7 +53,7 @@ export async function printfulPost<T = unknown>(path: string, body: unknown): Pr
   const res = await fetch(`${PRINTFUL_BASE}${path}`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${getApiKey()}`,
+      ...authHeaders(),
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
