@@ -41,7 +41,7 @@ grant all privileges on table public.customers to service_role;
 -- ambiguas abortan con una excepción explícita en lugar de reinterpretar datos.
 do $payment_events_shape$
 declare
-  v_nonempty pg_catalog.boolean;
+  v_nonempty boolean;
   v_actual_type pg_catalog.text;
   v_expected record;
 begin
@@ -360,14 +360,14 @@ create or replace function public.finalize_printful_fulfillment(
   p_event_id pg_catalog.text,
   p_payment_id pg_catalog.text,
   p_supplier_order_id pg_catalog.text
-) returns pg_catalog.boolean
+) returns boolean
 language plpgsql
 security definer
 set search_path = pg_catalog
 as $$
 declare
   v_event_row_id pg_catalog.uuid;
-  v_updated pg_catalog.integer;
+  v_updated integer;
 begin
   if nullif(pg_catalog.btrim(p_supplier_order_id), '') is null then
     return false;
