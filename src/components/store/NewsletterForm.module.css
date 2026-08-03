@@ -1,0 +1,100 @@
+.form {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: min(100%, 30rem);
+  border-bottom: 1px solid var(--ink);
+}
+
+.form input,
+.form button {
+  min-height: 3.25rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.form input {
+  min-width: 0;
+  padding: 0.75rem 0;
+  font-size: 0.86rem;
+  outline: none;
+}
+
+.form input::placeholder {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
+.form input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.form button {
+  padding: 0.75rem 0 0.75rem 1.5rem;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 500;
+  transition: opacity 180ms var(--ease-quiet);
+}
+
+.form button:hover:not(:disabled) {
+  opacity: 0.58;
+}
+
+.form button:disabled {
+  cursor: wait;
+  opacity: 0.48;
+}
+
+.error {
+  position: absolute;
+  top: calc(100% + 0.7rem);
+  left: 0;
+  margin: 0;
+  color: #8b352e;
+  font-size: 0.72rem;
+  text-align: left;
+}
+
+.success {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 374px) {
+  .form {
+    grid-template-columns: 1fr;
+    border-bottom: 0;
+  }
+
+  .form input {
+    border-bottom: 1px solid var(--ink);
+  }
+
+  .form button {
+    justify-self: start;
+    margin-top: 0.75rem;
+    padding-left: 0;
+    border-bottom: 1px solid var(--ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .form button {
+    transition: none;
+  }
+}

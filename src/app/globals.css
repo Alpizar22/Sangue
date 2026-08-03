@@ -7,16 +7,22 @@
  * componente; solo se reasignan los valores a la paleta editorial.
  */
 :root {
-  --bg:              #f4f1eb;
-  --ink:              #1a1a1a;
-  --paper:            #faf8f4;
-  --text-secondary:   #77736c;
-  --border:           #ddd8cf;
-  --accent:           #2d3a5f;
-  --accent-2:         #9a7b4f;
+  --bg:              #f3f0e9;
+  --ink:              #1b1a17;
+  --paper:            #f8f6f1;
+  --surface-muted:    #e9e5dc;
+  --text-secondary:   #6d6961;
+  --border:           #d5cfc4;
+  --accent:           #434b44;
+  --accent-2:         #806b4f;
   --night:            #1a1f2e;
   --night-muted:      #2d3347;
   --night-text:       #e8e4dd;
+  --content-max:      90rem;
+  --page-gutter:      clamp(1.25rem, 4vw, 4.5rem);
+  --header-height:    4.5rem;
+  --header-height-mobile: 4rem;
+  --ease-quiet:       cubic-bezier(0.22, 1, 0.36, 1);
 
   /*
    * Compat: el sitio entero referencia var(--font-space-mono) inline en
@@ -46,6 +52,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -53,8 +60,8 @@ body {
 }
 
 :focus-visible {
-  outline: 1.5px solid var(--ink);
-  outline-offset: 2px;
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {

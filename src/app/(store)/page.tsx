@@ -1,10 +1,12 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import type { Product } from "@/types"
-import { getDisplayName, getDisplayImages } from "@/lib/presentation"
+import { getDisplayImages, getDisplayName, getSubtitle } from "@/lib/presentation"
 import { HERO, INTRO, MANIFESTO, MATERIALS } from "@/lib/editorial"
 import NewsletterForm from "@/components/store/NewsletterForm"
-import { Eyebrow, Divider } from "@/components/store/Editorial"
+import { Eyebrow } from "@/components/store/Editorial"
+import styles from "./home.module.css"
 
 export const revalidate = 120
 
@@ -12,7 +14,6 @@ const FEATURED_LIMIT = 4
 
 export default async function HomePage() {
   const supabase = await createClient()
-
   const { data: products } = await supabase
     .from("products")
     .select("*")
@@ -20,185 +21,184 @@ export default async function HomePage() {
     .order("created_at", { ascending: false })
     .limit(FEATURED_LIMIT)
 
-  const featured = (products ?? []) as Product[]
+  return <HomeContent featured={(products ?? []) as Product[]} />
+}
 
+export function HomeContent({ featured }: { featured: Product[] }) {
   return (
-    <div className="flex flex-col">
+    <div className={styles.home}>
+      <Hero />
+      <ProductSelection products={featured.slice(0, FEATURED_LIMIT)} />
 
-      {/* ── HERO — tipográfico si HERO.image es null, editorial si no ── */}
-      {HERO.image ? (
-        <section className="relative" style={{ minHeight: "72vh" }}>
-          <img
-            src={HERO.image}
-            alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0" style={{ background: "rgba(26,26,26,0.32)" }} />
-          <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 h-full" style={{ minHeight: "72vh" }}>
-            <HeroCopy dark />
-          </div>
-        </section>
-      ) : (
-        <section
-          className="flex flex-col items-center justify-center text-center px-6"
-          style={{ background: "var(--bg)", minHeight: "72vh" }}
-        >
-          <HeroCopy />
-        </section>
-      )}
-
-      <Divider />
-
-      {/* ── INTRODUCCIÓN ─────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto w-full px-6 py-20 text-center">
+      <section className={styles.introduction} aria-labelledby="home-intro-title">
         <Eyebrow>{INTRO.eyebrow}</Eyebrow>
-        <p
-          className="text-[15px] md:text-base leading-relaxed mt-4"
-          style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
-        >
-          {INTRO.text}
-        </p>
+        <h2 id="home-intro-title" className={styles.introTitle}>
+          Diseñar menos.<br />Elegir mejor.
+        </h2>
+        <p className={styles.introText}>{INTRO.text}</p>
       </section>
 
-      <Divider />
-
-      {/* ── SELECCIÓN LIMITADA ───────────────────────────────────── */}
-      {featured.length > 0 && (
-        <>
-          <section className="max-w-6xl mx-auto w-full px-6 py-20">
-            <div className="flex items-baseline justify-between mb-10">
-              <h2
-                className="text-2xl md:text-3xl"
-                style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
-              >
-                Selección actual
-              </h2>
-              <Link
-                href="/coleccion"
-                className="text-[11px] uppercase tracking-[0.1em] transition-opacity hover:opacity-60"
-                style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--text-secondary)" }}
-              >
-                Ver colección →
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
-              {featured.map((product) => {
-                const images = getDisplayImages(product)
-                return (
-                  <Link key={product.id} href={`/productos/${product.id}`} className="group block">
-                    <div className="relative overflow-hidden aspect-[3/4]" style={{ background: "var(--paper)" }}>
-                      {images[0] && (
-                        <img
-                          src={images[0]}
-                          alt={getDisplayName(product)}
-                          loading="lazy"
-                          className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-                        />
-                      )}
-                    </div>
-                    <p
-                      className="text-[14px] mt-3"
-                      style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
-                    >
-                      {getDisplayName(product)}
-                    </p>
-                    <p
-                      className="text-[13px] mt-0.5"
-                      style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
-                    >
-                      ${Number(product.sale_price).toLocaleString("es-MX")} MXN
-                    </p>
-                  </Link>
-                )
-              })}
-            </div>
-          </section>
-          <Divider />
-        </>
-      )}
-
-      {/* ── MANIFIESTO ────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto w-full px-6 py-20 text-center">
-        <Eyebrow>{MANIFESTO.eyebrow}</Eyebrow>
-        <div className="mt-6 space-y-3">
-          {MANIFESTO.lines.map((line, i) => (
-            <p
-              key={i}
-              className="text-lg md:text-xl leading-snug"
-              style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
-            >
+      <section className={styles.manifesto} aria-labelledby="manifesto-title">
+        <Eyebrow id="manifesto-title">{MANIFESTO.eyebrow}</Eyebrow>
+        <div className={styles.manifestoLines}>
+          {MANIFESTO.lines.map((line, index) => (
+            <p key={line}>
+              <span aria-hidden="true">0{index + 1}</span>
               {line}
             </p>
           ))}
         </div>
       </section>
 
-      <Divider />
-
-      {/* ── MATERIA / FILOSOFÍA ──────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto w-full px-6 py-20 text-center">
-        <Eyebrow>{MATERIALS.eyebrow}</Eyebrow>
-        <p
-          className="text-[15px] leading-relaxed mt-4"
-          style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
-        >
-          {MATERIALS.text}
-        </p>
+      <section className={styles.materials} aria-labelledby="materials-title">
+        <div className={styles.materialsRule} aria-hidden="true" />
+        <div className={styles.materialsCopy}>
+          <Eyebrow id="materials-title">{MATERIALS.eyebrow}</Eyebrow>
+          <p>{MATERIALS.text}</p>
+          <Link href="/filosofia" className={styles.textLink}>
+            Conocer nuestra filosofía
+          </Link>
+        </div>
       </section>
 
-      <Divider />
-
-      {/* ── NEWSLETTER DISCRETO ──────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto w-full px-6 py-16 flex flex-col items-center text-center gap-4">
-        <p
-          className="text-[13px]"
-          style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
-        >
-          Piezas nuevas, sin ruido.
-        </p>
+      <section className={styles.newsletter} aria-labelledby="newsletter-title">
+        <Eyebrow>NOTAS DE THEIA</Eyebrow>
+        <h2 id="newsletter-title">Piezas nuevas, sin ruido.</h2>
+        <p>Una carta ocasional sobre materia, proceso y nuevas piezas.</p>
         <NewsletterForm />
       </section>
-
     </div>
   )
 }
 
-function HeroCopy({ dark = false }: { dark?: boolean }) {
-  const secondary = dark ? "rgba(244,241,235,0.8)" : "var(--text-secondary)"
-  const ink = dark ? "var(--bg)" : "var(--ink)"
+function Hero() {
+  const hasImage = Boolean(HERO.image)
+
   return (
-    <>
-      <p
-        className="text-[11px] uppercase tracking-[0.16em] mb-5"
-        style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: secondary }}
-      >
-        {HERO.eyebrow}
-      </p>
-      <h1
-        className="text-6xl md:text-8xl leading-none mb-6"
-        style={{ fontFamily: "var(--font-instrument)", color: ink }}
-      >
-        {HERO.title}
-      </h1>
-      <p
-        className="text-base md:text-lg mb-10 max-w-sm"
-        style={{ fontFamily: "var(--font-inter)", color: secondary }}
-      >
-        {HERO.text}
-      </p>
-      <Link
-        href={HERO.ctaHref}
-        className="inline-block px-8 py-3 text-[11px] uppercase tracking-[0.12em] transition-opacity hover:opacity-80"
-        style={{
-          fontFamily: "var(--font-inter)",
-          fontWeight: 500,
-          background: dark ? "var(--bg)" : "var(--ink)",
-          color: dark ? "var(--ink)" : "var(--bg)",
-        }}
-      >
-        {HERO.cta}
+    <section
+      className={`${styles.hero} ${hasImage ? styles.heroWithImage : ""}`}
+      aria-labelledby="hero-title"
+    >
+      {HERO.image && (
+        <img src={HERO.image} alt="" className={styles.heroImage} fetchPriority="high" />
+      )}
+      {HERO.image && <div className={styles.heroVeil} aria-hidden="true" />}
+
+      <div className={styles.heroHorizon} aria-hidden="true" />
+      <p className={styles.heroEyebrow}>{HERO.eyebrow}</p>
+      <h1 id="hero-title" className={styles.heroTitle}>{HERO.title}</h1>
+      <div className={styles.heroCopy}>
+        <p>{HERO.text}</p>
+        <Link href={HERO.ctaHref} className={styles.heroCta}>
+          {HERO.cta}
+          <span aria-hidden="true">↗</span>
+        </Link>
+      </div>
+      <p className={styles.heroEdition} aria-hidden="true">THEIA · 01</p>
+    </section>
+  )
+}
+
+function ProductSelection({ products }: { products: Product[] }) {
+  return (
+    <section className={styles.selection} aria-labelledby="selection-title">
+      <div className={styles.sectionHeading}>
+        <div>
+          <Eyebrow>COLECCIÓN ACTUAL</Eyebrow>
+          <h2 id="selection-title">Una selección esencial</h2>
+        </div>
+        {products.length > 0 && (
+          <Link href="/coleccion" className={styles.textLink}>
+            Ver colección
+          </Link>
+        )}
+      </div>
+
+      {products.length === 0 ? (
+        <EmptySelection />
+      ) : products.length === 1 ? (
+        <SingleProduct product={products[0]} />
+      ) : (
+        <div className={styles.productGrid} data-count={products.length}>
+          {products.map((product, index) => (
+            <ProductTile key={product.id} product={product} index={index} />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function EmptySelection() {
+  return (
+    <div className={styles.emptySelection}>
+      <p className={styles.emptyIndex}>01</p>
+      <div>
+        <h3>La próxima selección está tomando forma.</h3>
+        <p>Trabajamos pieza por pieza. Vuelve pronto para descubrir lo que sigue.</p>
+      </div>
+      <Link href="/la-casa" className={styles.textLink}>
+        Entrar a La Casa
       </Link>
-    </>
+    </div>
+  )
+}
+
+function SingleProduct({ product }: { product: Product }) {
+  const images = getDisplayImages(product)
+  const name = getDisplayName(product)
+  const subtitle = getSubtitle(product)
+
+  return (
+    <article className={styles.singleProduct}>
+      <Link href={`/productos/${product.id}`} className={styles.singleImageLink} aria-label={`Ver ${name}`}>
+        <ProductImage src={images[0]} alt={name} priority />
+      </Link>
+      <div className={styles.singleDetails}>
+        <p className={styles.pieceNumber}>PIEZA 01</p>
+        <h3>{name}</h3>
+        {subtitle && <p className={styles.productSubtitle}>{subtitle}</p>}
+        <p className={styles.productPrice}>${Number(product.sale_price).toLocaleString("es-MX")} MXN</p>
+        <Link href={`/productos/${product.id}`} className={styles.textLink}>
+          Ver pieza
+        </Link>
+      </div>
+    </article>
+  )
+}
+
+function ProductTile({ product, index }: { product: Product; index: number }) {
+  const images = getDisplayImages(product)
+  const name = getDisplayName(product)
+  const subtitle = getSubtitle(product)
+
+  return (
+    <article className={styles.productTile}>
+      <Link href={`/productos/${product.id}`} className={styles.productImageLink} aria-label={`Ver ${name}`}>
+        <ProductImage src={images[0]} alt={name} />
+        <span className={styles.productIndex} aria-hidden="true">0{index + 1}</span>
+      </Link>
+      <div className={styles.productDetails}>
+        <h3><Link href={`/productos/${product.id}`}>{name}</Link></h3>
+        {subtitle && <p className={styles.productSubtitle}>{subtitle}</p>}
+        <p className={styles.productPrice}>${Number(product.sale_price).toLocaleString("es-MX")} MXN</p>
+      </div>
+    </article>
+  )
+}
+
+function ProductImage({ src, alt, priority = false }: { src?: string; alt: string; priority?: boolean }) {
+  if (!src) {
+    return <span className={styles.imageFallback}>Imagen en preparación</span>
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : "auto"}
+      className={styles.productImage}
+    />
   )
 }
