@@ -10,6 +10,16 @@ interface PrintfulEnvelope<T> {
   error?: { reason: string; message: string }
 }
 
+export class PrintfulApiError extends Error {
+  constructor(
+    message: string,
+    public readonly httpStatus: number
+  ) {
+    super(message)
+    this.name = "PrintfulApiError"
+  }
+}
+
 function getApiKey(): string {
   const key = process.env.PRINTFUL_API_KEY
   if (!key) throw new Error("PRINTFUL_API_KEY no configurado")
@@ -29,10 +39,16 @@ async function handleResponse<T>(res: Response, method: string, path: string): P
   try {
     json = JSON.parse(raw)
   } catch {
-    throw new Error(`Printful ${method} ${path}: respuesta no es JSON (status ${res.status}): ${raw.slice(0, 200)}`)
+    throw new PrintfulApiError(
+      `Printful ${method} ${path}: respuesta no es JSON (status ${res.status})`,
+      res.status
+    )
   }
   if (!res.ok || json.code >= 300) {
-    throw new Error(`Printful ${method} ${path} error ${json.code ?? res.status}: ${json.error?.message ?? raw.slice(0, 200)}`)
+    throw new PrintfulApiError(
+      `Printful ${method} ${path} error ${json.code ?? res.status}: ${json.error?.message ?? json.error?.reason ?? "request_failed"}`,
+      res.status
+    )
   }
   return json.result
 }
@@ -83,7 +99,7 @@ export interface PrintfulSyncVariant {
   sync_product_id: number
   name: string
   synced: boolean
-  variant_id: number // catalog variant id — el que se usa para crear órdenes
+  variant_id: number // catalog variant id; para órdenes sincronizadas se traduce a sync variant id
   retail_price: string
   currency: string
   size: string
@@ -174,7 +190,7 @@ export async function estimateShipping(
 // ─── Órdenes ─────────────────────────────────────────────────────────────────
 
 export interface PrintfulOrderItem {
-  variant_id: number
+  sync_variant_id: number
   quantity: number
   retail_price?: string
 }
@@ -193,7 +209,7 @@ export interface PrintfulOrderInput {
     email?: string
   }
   items: PrintfulOrderItem[]
-  retail_costs?: { currency: string; subtotal?: string; shipping?: string; total?: string }
+  retail_costs?: { currency: string; subtotal?: string; shipping?: string }
   confirm?: boolean
 }
 
@@ -219,21 +235,118 @@ export async function createPrintfulOrder(input: PrintfulOrderInput): Promise<Pr
   return printfulPost<PrintfulOrderResult>(`/orders${query}`, body)
 }
 
-// Mapea nuestro pedido → orden Printful. Cada línea usa el printful_variant_id
-// guardado en el producto (variante única por producto — no distingue
-// talla/color elegido en el pedido; ver printful_variant_map para eso).
+export interface PrintfulSyncItemCandidate {
+  product_id: string
+  printful_product_id: number | null
+  catalog_variant_id: number
+  quantity: number
+  unit_price: number
+}
+
+export interface PrintfulSyncItem {
+  sync_variant_id: number
+  quantity: number
+  unit_price: number
+}
+
+export interface PrintfulSyncResolutionError {
+  product: string
+  printful_product_id: number | null
+  catalog_variant_id: number
+  reason: "missing_printful_product_id" | "sync_variant_not_found" | "sync_variant_not_synced"
+}
+
+export type PrintfulSyncItemResolution =
+  | { ok: true; items: PrintfulSyncItem[] }
+  | { ok: false; items: []; errors: PrintfulSyncResolutionError[] }
+
+export async function resolvePrintfulSyncItems(
+  candidates: PrintfulSyncItemCandidate[],
+  loadProduct: (id: number) => Promise<PrintfulSyncProductDetail> = getPrintfulProduct
+): Promise<PrintfulSyncItemResolution> {
+  const productRequests = new Map<number, Promise<PrintfulSyncProductDetail>>()
+  const resolved: PrintfulSyncItem[] = []
+  const errors: PrintfulSyncResolutionError[] = []
+
+  for (const candidate of candidates) {
+    if (candidate.printful_product_id == null) {
+      errors.push({
+        product: candidate.product_id,
+        printful_product_id: null,
+        catalog_variant_id: candidate.catalog_variant_id,
+        reason: "missing_printful_product_id",
+      })
+      continue
+    }
+
+    let request = productRequests.get(candidate.printful_product_id)
+    if (!request) {
+      request = loadProduct(candidate.printful_product_id)
+      productRequests.set(candidate.printful_product_id, request)
+    }
+    const detail = await request
+    const syncVariant = detail.sync_variants.find(
+      (variant) => variant.variant_id === candidate.catalog_variant_id
+    )
+
+    if (!syncVariant || !Number.isSafeInteger(syncVariant.id) || syncVariant.id <= 0) {
+      errors.push({
+        product: candidate.product_id,
+        printful_product_id: candidate.printful_product_id,
+        catalog_variant_id: candidate.catalog_variant_id,
+        reason: "sync_variant_not_found",
+      })
+      continue
+    }
+    if (!syncVariant.synced) {
+      errors.push({
+        product: candidate.product_id,
+        printful_product_id: candidate.printful_product_id,
+        catalog_variant_id: candidate.catalog_variant_id,
+        reason: "sync_variant_not_synced",
+      })
+      continue
+    }
+
+    resolved.push({
+      sync_variant_id: syncVariant.id,
+      quantity: candidate.quantity,
+      unit_price: candidate.unit_price,
+    })
+  }
+
+  return errors.length > 0
+    ? { ok: false, items: [], errors }
+    : { ok: true, items: resolved }
+}
+
+export function printfulFailureDetail(error: unknown, externalId: string) {
+  return {
+    external_id: externalId,
+    http_status: error instanceof PrintfulApiError ? error.httpStatus : null,
+    message: error instanceof Error ? error.message.slice(0, 500) : "unknown_error",
+  }
+}
+
+export function buildPrintfulFailureEventUpdate(error: unknown, externalId: string) {
+  return {
+    status: "printful_failed" as const,
+    detail: printfulFailureDetail(error, externalId),
+  }
+}
+
+// Mapea los items ya traducidos a variantes sincronizadas a una orden Printful.
 export function buildPrintfulOrderInput(params: {
   externalId?: string
   customerName: string
   customerEmail: string
   customerPhone: string
   shippingAddress: ShippingAddress
-  items: { printful_variant_id: number; quantity: number; unit_price: number }[]
+  items: { sync_variant_id: number; quantity: number; unit_price: number }[]
   subtotal: number
   shippingCost: number
-  total: number
 }): PrintfulOrderInput | null {
-  const { externalId, customerName, customerEmail, customerPhone, shippingAddress, items, subtotal, shippingCost, total } = params
+  const { externalId, customerName, customerEmail, customerPhone, shippingAddress, items, subtotal, shippingCost } = params
 
   if (items.length === 0) return null
 
@@ -251,7 +364,7 @@ export function buildPrintfulOrderInput(params: {
       email: customerEmail,
     },
     items: items.map((i) => ({
-      variant_id: i.printful_variant_id,
+      sync_variant_id: i.sync_variant_id,
       quantity: i.quantity,
       retail_price: i.unit_price.toFixed(2),
     })),
@@ -259,7 +372,6 @@ export function buildPrintfulOrderInput(params: {
       currency: "MXN",
       subtotal: subtotal.toFixed(2),
       shipping: shippingCost.toFixed(2),
-      total: total.toFixed(2),
     },
     confirm: true,
   }

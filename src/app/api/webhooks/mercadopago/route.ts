@@ -3,7 +3,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { Payment } from "mercadopago"
 import { getMercadoPagoClient } from "@/lib/mercadopago/client"
-import { buildPrintfulOrderInput, createPrintfulOrder } from "@/lib/printful"
+import {
+  buildPrintfulOrderInput,
+  buildPrintfulFailureEventUpdate,
+  createPrintfulOrder,
+  printfulFailureDetail,
+  resolvePrintfulSyncItems,
+} from "@/lib/printful"
 import {
   buildBlockedFulfillmentUpdate,
   preparePrintfulFulfillment,
@@ -132,7 +138,7 @@ export async function POST(req: NextRequest) {
     const productIds = [...new Set(storedItems.map((item) => item.product_id).filter(Boolean))]
     const { data: productRows, error: productError } = await supabase
       .from("products")
-      .select("id, printful_variant_id, printful_variant_map, source")
+      .select("id, printful_product_id, printful_variant_id, printful_variant_map, source")
       .in("id", productIds)
     if (productError) {
       console.error(`[mp-webhook] No se pudo consultar catálogo para ${orderId}:`, productError.code)
@@ -178,16 +184,65 @@ export async function POST(req: NextRequest) {
     }
 
     const externalId = toPrintfulExternalId(orderId)
+    const productRowsById = new Map((productRows ?? []).map((product) => [product.id, product]))
+    let syncPreparation
+    try {
+      syncPreparation = await resolvePrintfulSyncItems(
+        preparation.items.map((item, index) => ({
+          product_id: storedItems[index].product_id,
+          printful_product_id: productRowsById.get(storedItems[index].product_id)?.printful_product_id ?? null,
+          catalog_variant_id: item.printful_variant_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+        }))
+      )
+    } catch (error) {
+      const detail = printfulFailureDetail(error, externalId)
+      console.error(`[mp-webhook] Error resolviendo variantes sincronizadas para ${orderId}:`, error)
+      await recordPrintfulFailure(supabase, orderId, order.notes, "PRINTFUL_API_FAILED", {
+        stage: "resolve_sync_variants",
+        ...detail,
+      })
+      await supabase
+        .from("payment_events")
+        .update({ status: "printful_failed", detail })
+        .eq("provider", "mercadopago")
+        .eq("event_id", paymentId)
+      return NextResponse.json({ received: true })
+    }
+
+    if (!syncPreparation.ok) {
+      const detail = {
+        external_id: externalId,
+        http_status: null,
+        message: "No se pudo resolver una variante sincronizada y activa de Printful.",
+        errors: syncPreparation.errors,
+      }
+      console.error(
+        `[mp-webhook] Fulfillment Printful sin sync_variant_id para pedido ${orderId}:`,
+        JSON.stringify(detail)
+      )
+      await recordPrintfulFailure(supabase, orderId, order.notes, "PRINTFUL_API_FAILED", {
+        stage: "resolve_sync_variants",
+        ...detail,
+      })
+      await supabase
+        .from("payment_events")
+        .update({ status: "printful_failed", detail })
+        .eq("provider", "mercadopago")
+        .eq("event_id", paymentId)
+      return NextResponse.json({ received: true })
+    }
+
     const printfulInput = buildPrintfulOrderInput({
       externalId,
       customerName: customer?.name ?? "Cliente",
       customerEmail: customer?.email ?? "",
       customerPhone: (customer?.phone ?? "").replace(/\D/g, "") || "0000000000",
       shippingAddress,
-      items: preparation.items,
+      items: syncPreparation.items,
       subtotal: Number(order.subtotal),
       shippingCost: Number(order.shipping_cost),
-      total: Number(order.total),
     })
 
     if (!printfulInput) {
@@ -202,15 +257,15 @@ export async function POST(req: NextRequest) {
     try {
       printfulResult = await createPrintfulOrder(printfulInput)
     } catch (error) {
+      const failureUpdate = buildPrintfulFailureEventUpdate(error, externalId)
       console.error(`[mp-webhook] Error Printful para pedido ${orderId}:`, error)
       await recordPrintfulFailure(supabase, orderId, order.notes, "PRINTFUL_API_FAILED", {
         stage: "create_order",
-        external_id: externalId,
-        reason: error instanceof Error ? error.message.slice(0, 500) : "unknown_error",
+        ...failureUpdate.detail,
       })
       await supabase
         .from("payment_events")
-        .update({ status: "printful_failed", detail: { external_id: externalId } })
+        .update(failureUpdate)
         .eq("provider", "mercadopago")
         .eq("event_id", paymentId)
       return NextResponse.json({ received: true })
