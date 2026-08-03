@@ -270,8 +270,8 @@ declare
   v_event_id pg_catalog.uuid;
   v_note pg_catalog.text;
 begin
-  if pg_catalog.nullif(pg_catalog.btrim(p_event_id), '') is null
-     or pg_catalog.nullif(pg_catalog.btrim(p_payment_id), '') is null then
+  if nullif(pg_catalog.btrim(p_event_id), '') is null
+     or nullif(pg_catalog.btrim(p_payment_id), '') is null then
     return 'invalid_event';
   end if;
 
@@ -305,7 +305,7 @@ begin
     return 'cancelled';
   end if;
 
-  if pg_catalog.upper(pg_catalog.coalesce(p_currency, '')) <> 'MXN'
+  if pg_catalog.upper(coalesce(p_currency, '')) <> 'MXN'
      or p_amount is null
      or pg_catalog.abs(p_amount - v_order.total) > 0.005 then
     v_note := '[PAYMENT_VALIDATION_FAILED] ' || pg_catalog.jsonb_build_object(
@@ -316,8 +316,8 @@ begin
     )::pg_catalog.text;
     update public.orders
       set notes = case
-        when pg_catalog.coalesce(notes, '') like '%' || v_note || '%' then notes
-        when pg_catalog.nullif(pg_catalog.btrim(notes), '') is null then v_note
+        when coalesce(notes, '') like '%' || v_note || '%' then notes
+        when nullif(pg_catalog.btrim(notes), '') is null then v_note
         else notes || E'\n' || v_note
       end
       where id = p_order_id;
@@ -369,7 +369,7 @@ declare
   v_event_row_id pg_catalog.uuid;
   v_updated pg_catalog.integer;
 begin
-  if pg_catalog.nullif(pg_catalog.btrim(p_supplier_order_id), '') is null then
+  if nullif(pg_catalog.btrim(p_supplier_order_id), '') is null then
     return false;
   end if;
 
