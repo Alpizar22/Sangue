@@ -106,3 +106,119 @@ export function resolvePrintfulVariant({
     error: "No hay printful_variant_map ni printful_variant_id para resolver la variante.",
   }
 }
+
+export interface StoredFulfillmentItem {
+  product_id: string
+  quantity: number
+  unit_price: number
+  size?: string | null
+  color?: string | null
+}
+
+export interface PrintfulProductInfo {
+  printful_variant_id: number | null
+  printful_variant_map: Record<string, number> | null
+}
+
+export interface ResolvedPrintfulItem {
+  printful_variant_id: number
+  quantity: number
+  unit_price: number
+}
+
+export interface FulfillmentResolutionError {
+  product: string
+  color: string | null
+  size: string | null
+  reason: string
+}
+
+export type PrintfulFulfillmentPreparation =
+  | {
+      ok: true
+      items: ResolvedPrintfulItem[]
+    }
+  | {
+      ok: false
+      items: []
+      errors: FulfillmentResolutionError[]
+      notes: string
+    }
+
+export function formatFulfillmentBlockNotes(errors: FulfillmentResolutionError[]): string {
+  return `[PRINTFUL_FULFILLMENT_BLOCKED] ${JSON.stringify({ errors })}`
+}
+
+export function appendFulfillmentNotes(existingNotes: string | null, blockNotes: string): string {
+  const current = existingNotes?.trim()
+  if (current?.includes(blockNotes)) return current
+  return current ? `${current}\n${blockNotes}` : blockNotes
+}
+
+export function buildBlockedFulfillmentUpdate(
+  existingNotes: string | null,
+  preparation: Extract<PrintfulFulfillmentPreparation, { ok: false }>
+): { status: "processing"; supplier_order_id: null; notes: string } {
+  return {
+    status: "processing",
+    supplier_order_id: null,
+    notes: appendFulfillmentNotes(existingNotes, preparation.notes),
+  }
+}
+
+// Prepara el pedido completo antes de cualquier llamada a Printful. El
+// resultado es atómico: todos los artículos resueltos o ninguno.
+export function preparePrintfulFulfillment(
+  storedItems: StoredFulfillmentItem[],
+  printfulProductMap: Record<string, PrintfulProductInfo>
+): PrintfulFulfillmentPreparation {
+  const resolvedItems: ResolvedPrintfulItem[] = []
+  const errors: FulfillmentResolutionError[] = []
+
+  for (const item of storedItems) {
+    const info = printfulProductMap[item.product_id]
+    if (!info) {
+      errors.push({
+        product: item.product_id,
+        color: item.color ?? null,
+        size: item.size ?? null,
+        reason: "El producto no existe en el catálogo activo de Printful.",
+      })
+      continue
+    }
+
+    const resolution = resolvePrintfulVariant({
+      color: item.color,
+      size: item.size,
+      printfulVariantMap: info.printful_variant_map,
+      printfulVariantId: info.printful_variant_id,
+    })
+
+    if (!resolution.ok) {
+      errors.push({
+        product: item.product_id,
+        color: item.color ?? null,
+        size: item.size ?? null,
+        reason: resolution.error,
+      })
+      continue
+    }
+
+    resolvedItems.push({
+      printful_variant_id: resolution.variantId,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+    })
+  }
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      items: [],
+      errors,
+      notes: formatFulfillmentBlockNotes(errors),
+    }
+  }
+
+  return { ok: true, items: resolvedItems }
+}

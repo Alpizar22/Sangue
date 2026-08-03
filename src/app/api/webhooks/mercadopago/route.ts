@@ -4,7 +4,12 @@ import { createHmac } from "crypto"
 import { getMercadoPagoClient } from "@/lib/mercadopago/client"
 import { Payment } from "mercadopago"
 import { createPrintfulOrder, buildPrintfulOrderInput } from "@/lib/printful"
-import { resolvePrintfulVariant } from "@/lib/printfulVariant"
+import {
+  buildBlockedFulfillmentUpdate,
+  preparePrintfulFulfillment,
+  type PrintfulProductInfo,
+  type StoredFulfillmentItem,
+} from "@/lib/printfulVariant"
 import type { ShippingAddress } from "@/types"
 
 function adminSupabase() {
@@ -103,16 +108,8 @@ export async function POST(req: NextRequest) {
     // 2. Crear orden en Printful
     const customer = order.customer as { name: string; phone: string | null; email: string | null } | null
     const shippingAddress = order.shipping_address as ShippingAddress
-    type StoredItem = {
-      product_id: string
-      quantity: number
-      unit_price: number
-      size?: string | null
-      color?: string | null
-    }
-
     try {
-      const storedItems = (order.items ?? []) as StoredItem[]
+      const storedItems = (order.items ?? []) as StoredFulfillmentItem[]
       const productIds = storedItems.map((i) => i.product_id).filter(Boolean)
 
       const { data: productRows } = await supabase
@@ -120,10 +117,6 @@ export async function POST(req: NextRequest) {
         .select("id, printful_variant_id, printful_variant_map, source")
         .in("id", productIds)
 
-      type PrintfulProductInfo = {
-        printful_variant_id: number | null
-        printful_variant_map: Record<string, number> | null
-      }
       const printfulProductMap: Record<string, PrintfulProductInfo> = {}
       for (const p of productRows ?? []) {
         if (p.source === "printful") {
@@ -136,33 +129,21 @@ export async function POST(req: NextRequest) {
 
       const customerPhone = (customer?.phone ?? "").replace(/\D/g, "") || "0000000000"
 
-      // Resuelve el variant_id exacto (color+talla) de cada item — nunca
-      // asume el variant por defecto del producto sin dejar rastro.
-      const printfulItems: { printful_variant_id: number; quantity: number; unit_price: number }[] = []
-      for (const item of storedItems) {
-        const info = printfulProductMap[item.product_id]
-        if (!info) continue // no es un producto Printful — se ignora, como antes
+      // El fulfillment es atómico: primero se resuelven todas las variantes.
+      // Si falla una sola, no se envía ningún artículo a Printful.
+      const preparation = preparePrintfulFulfillment(storedItems, printfulProductMap)
+      if (!preparation.ok) {
+        console.error(
+          `[mp-webhook] Fulfillment Printful bloqueado para pedido ${orderId}:`,
+          JSON.stringify({ orderId, errors: preparation.errors })
+        )
 
-        const resolution = resolvePrintfulVariant({
-          color: item.color,
-          size: item.size,
-          printfulVariantMap: info.printful_variant_map,
-          printfulVariantId: info.printful_variant_id,
-        })
+        await supabase
+          .from("orders")
+          .update(buildBlockedFulfillmentUpdate(order.notes, preparation))
+          .eq("id", orderId)
 
-        if (!resolution.ok) {
-          console.error(
-            `[mp-webhook] Pedido ${orderId}: no se pudo resolver variante Printful para producto ${item.product_id} ` +
-              `(color="${item.color ?? ""}", talla="${item.size ?? ""}"): ${resolution.error} — item excluido de la orden Printful.`
-          )
-          continue
-        }
-
-        printfulItems.push({
-          printful_variant_id: resolution.variantId,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-        })
+        return NextResponse.json({ received: true })
       }
 
       const printfulInput = buildPrintfulOrderInput({
@@ -170,7 +151,7 @@ export async function POST(req: NextRequest) {
         customerEmail: customer?.email ?? "",
         customerPhone,
         shippingAddress,
-        items: printfulItems,
+        items: preparation.items,
         subtotal: order.subtotal,
         shippingCost: order.shipping_cost,
         total: order.total,
