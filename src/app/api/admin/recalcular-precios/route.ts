@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { cookies } from "next/headers"
+import { hasValidAdminSession } from "@/lib/adminAuth"
 
 const MARGIN = 2.75 // costo Printful × margen — ver /api/printful/import
 const MAX_PRICE = 999999.99
@@ -12,9 +12,8 @@ function adminSupabase() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
-export async function POST(_req: NextRequest) {
-  const cookieStore = await cookies()
-  if (!cookieStore.get("admin_session")?.value) {
+export async function POST() {
+  if (!(await hasValidAdminSession())) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 })
   }
 

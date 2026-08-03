@@ -118,13 +118,13 @@ alter table pricing_rules enable row level security;
 create policy "productos_public_read" on products
   for select using (status = 'active');
 
--- Clientes: solo autenticados (admin)
-create policy "customers_admin_only" on customers
-  for all using (auth.role() = 'authenticated');
-
--- Pedidos: solo admin
-create policy "orders_admin_only" on orders
-  for all using (auth.role() = 'authenticated');
+-- Clientes y pedidos: sin acceso directo para anon/authenticated.
+-- El backend usa exclusivamente service_role; el seguimiento público pasa por
+-- rutas server-side que validan public_access_token.
+revoke all privileges on table customers from anon, authenticated;
+revoke all privileges on table orders from anon, authenticated;
+grant all privileges on table customers to service_role;
+grant all privileges on table orders to service_role;
 
 -- Scraping: solo admin
 create policy "scraping_admin_only" on scraping_jobs
