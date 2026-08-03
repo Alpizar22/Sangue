@@ -1,7 +1,9 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import {
   canAcceptUnsignedWebhook,
   canUseAutoReturn,
+  MERCADOPAGO_STATEMENT_DESCRIPTOR,
   toPrintfulExternalId,
   validateApprovedPayment,
   type OrderPaymentSnapshot,
@@ -110,6 +112,17 @@ check("auto_return se mantiene con la URL pública de producción", () => {
   assert.equal(canUseAutoReturn("https://www.theia.lat"), true)
   assert.equal(canUseAutoReturn("https://theia.lat"), true)
   assert.equal(canUseAutoReturn("https://theia-git-main.vercel.app"), true)
+})
+
+check("la preferencia envía THEIA como statement_descriptor dentro del límite", () => {
+  const checkoutRoute = readFileSync("src/app/api/pedidos/checkout/route.ts", "utf8")
+  assert.equal(MERCADOPAGO_STATEMENT_DESCRIPTOR, "THEIA")
+  assert.ok(MERCADOPAGO_STATEMENT_DESCRIPTOR.length <= 13)
+  assert.match(
+    checkoutRoute,
+    /statement_descriptor:\s*MERCADOPAGO_STATEMENT_DESCRIPTOR/,
+    "preferenceBody debe enviar el descriptor validado"
+  )
 })
 
 check("la huella del token no revela el secreto", () => {

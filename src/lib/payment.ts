@@ -1,5 +1,7 @@
 import type { OrderStatus } from "@/types"
 
+export const MERCADOPAGO_STATEMENT_DESCRIPTOR = "THEIA"
+
 export interface PaymentSnapshot {
   id: string
   status: string | null | undefined

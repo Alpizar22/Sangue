@@ -11,7 +11,7 @@ import {
 import { appendUniqueOrderNote, formatOperationalNote } from "@/lib/orderNotes"
 import { buildDiscountedTotals, evaluateDiscount, normalizeDiscountCode, roundMoney } from "@/lib/discounts"
 import { consumeDiscountCode, findDiscountCode, releaseDiscountCode } from "@/lib/discountLookup"
-import { canUseAutoReturn } from "@/lib/payment"
+import { canUseAutoReturn, MERCADOPAGO_STATEMENT_DESCRIPTOR } from "@/lib/payment"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.theia.lat"
 const AUTO_RETURN_ENABLED = canUseAutoReturn(SITE_URL)
@@ -213,6 +213,7 @@ export async function POST(req: NextRequest) {
 
   const preferenceBody = {
     external_reference: order.id,
+    statement_descriptor: MERCADOPAGO_STATEMENT_DESCRIPTOR,
     items: [
       ...productLines,
       {
