@@ -57,3 +57,26 @@ export function toPrintfulExternalId(orderId: string): string {
 export function canAcceptUnsignedWebhook(nodeEnv: string | undefined): boolean {
   return nodeEnv !== "production"
 }
+
+// MercadoPago rechaza auto_return si back_urls.success no es una URL pública
+// alcanzable: con http://localhost responde 400 invalid_auto_return y el
+// mensaje engañoso "back_url.success must be defined", aunque la URL sí venga.
+// En local se omite auto_return —el cliente vuelve con el botón de MercadoPago
+// en lugar de automáticamente— y en producción se conserva intacto.
+export function canUseAutoReturn(siteUrl: string | undefined): boolean {
+  if (!siteUrl) return false
+  let url: URL
+  try {
+    url = new URL(siteUrl)
+  } catch {
+    return false
+  }
+  if (url.protocol !== "https:") return false
+
+  const host = url.hostname.toLowerCase()
+  if (host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1") return false
+  if (host.endsWith(".local") || host.endsWith(".localhost")) return false
+  // Una IP sin dominio tampoco es alcanzable para el redirect de MercadoPago.
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return false
+  return true
+}

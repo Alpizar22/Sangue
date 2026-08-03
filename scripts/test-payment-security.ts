@@ -1,10 +1,12 @@
 import assert from "node:assert/strict"
 import {
   canAcceptUnsignedWebhook,
+  canUseAutoReturn,
   toPrintfulExternalId,
   validateApprovedPayment,
   type OrderPaymentSnapshot,
 } from "../src/lib/payment.ts"
+import { describeAccessToken } from "../src/lib/mercadopago/client.ts"
 
 const order: OrderPaymentSnapshot = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -90,3 +92,31 @@ await Promise.resolve()
 setTimeout(() => {
   console.log(`\n${passed} pruebas OK` + (process.exitCode ? " — HAY FALLAS ARRIBA" : ""))
 }, 0)
+
+// ── auto_return: MercadoPago exige back_urls.success públicamente alcanzable ──
+check("auto_return se desactiva con localhost y URLs no públicas", () => {
+  assert.equal(canUseAutoReturn("http://localhost:3000"), false)
+  assert.equal(canUseAutoReturn("https://localhost:3000"), false)
+  assert.equal(canUseAutoReturn("http://127.0.0.1:3000"), false)
+  assert.equal(canUseAutoReturn("https://192.168.1.50"), false)
+  assert.equal(canUseAutoReturn("https://theia.local"), false)
+  assert.equal(canUseAutoReturn("http://www.theia.lat"), false)
+  assert.equal(canUseAutoReturn(""), false)
+  assert.equal(canUseAutoReturn(undefined), false)
+  assert.equal(canUseAutoReturn("no-es-una-url"), false)
+})
+
+check("auto_return se mantiene con la URL pública de producción", () => {
+  assert.equal(canUseAutoReturn("https://www.theia.lat"), true)
+  assert.equal(canUseAutoReturn("https://theia.lat"), true)
+  assert.equal(canUseAutoReturn("https://theia-git-main.vercel.app"), true)
+})
+
+check("la huella del token no revela el secreto", () => {
+  const token = "APP_USR-8697645010519606-041917-6d7d35cda7f436e9b9446993dc99e501-3346852366"
+  const fingerprint = describeAccessToken(token)
+  assert.ok(fingerprint.startsWith("APP_USR-86"), "debe mostrar el prefijo")
+  assert.ok(fingerprint.includes("userId=3346852366"), "debe mostrar el user id")
+  assert.ok(!fingerprint.includes("6d7d35cda7f436e9b9446993dc99e501"), "NO debe incluir el hash secreto")
+  assert.equal(describeAccessToken(undefined), "AUSENTE")
+})

@@ -11,8 +11,10 @@ import {
 import { appendUniqueOrderNote, formatOperationalNote } from "@/lib/orderNotes"
 import { buildDiscountedTotals, evaluateDiscount, normalizeDiscountCode, roundMoney } from "@/lib/discounts"
 import { consumeDiscountCode, findDiscountCode, releaseDiscountCode } from "@/lib/discountLookup"
+import { canUseAutoReturn } from "@/lib/payment"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.theia.lat"
+const AUTO_RETURN_ENABLED = canUseAutoReturn(SITE_URL)
 
 function adminSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -227,7 +229,10 @@ export async function POST(req: NextRequest) {
       failure: `${SITE_URL}/checkout?status=failure`,
       pending: `${SITE_URL}${orderPath}&status=pending`,
     },
-    auto_return: "approved" as const,
+    // Solo se pide el retorno automático cuando SITE_URL es una URL pública:
+    // con localhost MercadoPago responde 400 invalid_auto_return y el checkout
+    // entero falla en desarrollo. Ver canUseAutoReturn.
+    ...(AUTO_RETURN_ENABLED ? { auto_return: "approved" as const } : {}),
     notification_url: `${SITE_URL}/api/webhooks/mercadopago`,
   }
 
