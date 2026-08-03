@@ -6,7 +6,7 @@ import {
   validateApprovedPayment,
   type OrderPaymentSnapshot,
 } from "../src/lib/payment.ts"
-import { describeAccessToken } from "../src/lib/mercadopago/client.ts"
+import { auditMercadoPagoCredential, describeAccessToken } from "../src/lib/mercadopago/client.ts"
 
 const order: OrderPaymentSnapshot = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -119,4 +119,93 @@ check("la huella del token no revela el secreto", () => {
   assert.ok(fingerprint.includes("userId=3346852366"), "debe mostrar el user id")
   assert.ok(!fingerprint.includes("6d7d35cda7f436e9b9446993dc99e501"), "NO debe incluir el hash secreto")
   assert.equal(describeAccessToken(undefined), "AUSENTE")
+})
+
+// ── Auditoría de credenciales MercadoPago ────────────────────────────────────
+// El fallo real en producción: el token traía un "\n" final y la cabecera
+// Authorization quedaba inválida. Estas pruebas fijan ese comportamiento.
+const PROD_TOKEN = "APP_USR-7104740247964511-041917-c1b5804fd550a850f56cc7570bc74d3f-3348003734"
+const PUBLIC_KEY = "APP_USR-54f6c65e-19f8-4f1a-b427-805fa28ccca0"
+
+check("un token con salto de línea final se recorta y queda utilizable", () => {
+  const audit = auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", `${PROD_TOKEN}\n`, "access_token")
+  assert.equal(audit.error, null, "no debe bloquear: el valor es correcto, solo sobraba el salto")
+  assert.equal(audit.warning, null)
+  assert.equal(audit.value, PROD_TOKEN)
+  assert.equal(audit.value.length, 75)
+  assert.equal(audit.hadSurroundingWhitespace, true, "debe avisar del recorte")
+})
+
+check("espacios, tabuladores y CRLF alrededor también se recortan", () => {
+  for (const wrapped of [` ${PROD_TOKEN}`, `${PROD_TOKEN} `, `\t${PROD_TOKEN}\r\n`, `\n\n${PROD_TOKEN}\n`]) {
+    const audit = auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", wrapped, "access_token")
+    assert.equal(audit.error, null)
+    assert.equal(audit.value, PROD_TOKEN)
+    assert.equal(audit.hadSurroundingWhitespace, true)
+  }
+})
+
+check("un token limpio no genera aviso de recorte", () => {
+  const audit = auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", PROD_TOKEN, "access_token")
+  assert.deepEqual(
+    { error: audit.error, warning: audit.warning, trimmed: audit.hadSurroundingWhitespace },
+    { error: null, warning: null, trimmed: false }
+  )
+})
+
+check("credencial ausente o vacía da error explícito", () => {
+  assert.match(
+    auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", undefined, "access_token").error ?? "",
+    /no está configurado/
+  )
+  assert.match(
+    auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", "   \n ", "access_token").error ?? "",
+    /vacío/
+  )
+})
+
+check("espacios internos se rechazan: la cabecera quedaría rota", () => {
+  const partido = PROD_TOKEN.slice(0, 20) + " " + PROD_TOKEN.slice(20)
+  assert.match(
+    auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", partido, "access_token").error ?? "",
+    /espacios o saltos de línea internos/
+  )
+})
+
+check("caracteres de control internos se rechazan", () => {
+  const conNul = PROD_TOKEN.slice(0, 20) + "\u0000" + PROD_TOKEN.slice(20)
+  assert.match(
+    auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", conNul, "access_token").error ?? "",
+    /caracteres de control/
+  )
+})
+
+check("un valor con prefijo equivocado se rechaza con el largo en el mensaje", () => {
+  const audit = auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", "REEMPLAZAR_CON_TOKEN", "access_token")
+  assert.match(audit.error ?? "", /no empieza con APP_USR- ni TEST-/)
+  assert.match(audit.error ?? "", /largo=20/)
+})
+
+check("un token truncado pasa pero con aviso de forma", () => {
+  const audit = auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", "APP_USR-7104740247964511-041917", "access_token")
+  assert.equal(audit.error, null, "no bloquea: el formato de MercadoPago puede cambiar")
+  assert.match(audit.warning ?? "", /no coincide con el formato habitual/)
+})
+
+check("las claves públicas se validan con su propia forma", () => {
+  const limpia = auditMercadoPagoCredential("NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY", PUBLIC_KEY, "public_key")
+  assert.equal(limpia.error, null)
+  assert.equal(limpia.warning, null)
+
+  const conSalto = auditMercadoPagoCredential("MERCADOPAGO_PUBLIC_KEY", `${PUBLIC_KEY}\n`, "public_key")
+  assert.equal(conSalto.error, null)
+  assert.equal(conSalto.value, PUBLIC_KEY)
+  assert.equal(conSalto.hadSurroundingWhitespace, true)
+})
+
+check("el token de prueba (test user) sigue siendo válido tras la validación", () => {
+  const testToken = "APP_USR-8697645010519606-041917-6d7d35cda7f436e9b9446993dc99e501-3346852366"
+  const audit = auditMercadoPagoCredential("MERCADOPAGO_ACCESS_TOKEN", testToken, "access_token")
+  assert.equal(audit.error, null)
+  assert.equal(audit.warning, null)
 })
