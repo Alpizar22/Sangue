@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/pedidos/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        source: "/ayuda/seguimiento",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
     ]
   },
 }

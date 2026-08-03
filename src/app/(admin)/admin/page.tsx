@@ -1,10 +1,10 @@
-import { createClient } from "@/lib/supabase/server"
+import { createServiceClient } from "@/lib/supabase/service"
 import AdminActions from "@/components/admin/AdminActions"
 
 export const metadata = { title: "Dashboard" }
 
 export default async function AdminDashboard() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const [{ count: totalProducts }, { count: totalOrders }, { data: recentOrders }] =
     await Promise.all([
