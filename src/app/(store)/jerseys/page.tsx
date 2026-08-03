@@ -10,28 +10,28 @@ export default function JerseysPage() {
       className="flex-1 flex flex-col items-center justify-center text-center px-6 py-28"
       style={{ background: "var(--bg)", minHeight: "60vh" }}
     >
+      <p
+        className="text-[10px] uppercase tracking-[0.14em] mb-4"
+        style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
+      >
+        Próximamente
+      </p>
       <h1
-        className="text-5xl italic leading-none mb-4"
+        className="text-5xl leading-none mb-6"
         style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
       >
         Jerseys
       </h1>
       <p
-        className="text-base mb-8"
-        style={{ fontFamily: "var(--font-caveat)", color: "var(--pink)", fontSize: "1.3rem" }}
+        className="text-[13px] mb-10 max-w-xs leading-relaxed"
+        style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
       >
-        Próximamente
-      </p>
-      <p
-        className="text-[10px] uppercase tracking-[0.25em] mb-10 max-w-xs"
-        style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
-      >
-        Estamos preparando nuestra línea de jerseys con diseño propio
+        Estamos preparando nuestra línea de jerseys con diseño propio.
       </p>
       <Link
         href="/coleccion"
-        className="inline-block px-8 py-3 text-xs uppercase tracking-[0.2em] transition-all hover:opacity-80"
-        style={{ fontFamily: "var(--font-space-mono)", background: "var(--ink)", color: "var(--bg)" }}
+        className="inline-block px-8 py-3 text-xs uppercase tracking-[0.12em] transition-opacity hover:opacity-75"
+        style={{ fontFamily: "var(--font-inter)", background: "var(--ink)", color: "var(--bg)" }}
       >
         Ver colección
       </Link>

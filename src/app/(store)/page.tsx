@@ -1,9 +1,14 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import type { Product } from "@/types"
-import ProductGrid from "@/components/store/ProductGrid"
+import { getDisplayName, getDisplayImages } from "@/lib/presentation"
+import { HERO, INTRO, MANIFESTO, MATERIALS } from "@/lib/editorial"
+import NewsletterForm from "@/components/store/NewsletterForm"
+import { Eyebrow, Divider } from "@/components/store/Editorial"
 
 export const revalidate = 120
+
+const FEATURED_LIMIT = 4
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -13,124 +18,187 @@ export default async function HomePage() {
     .select("*")
     .eq("status", "active")
     .order("created_at", { ascending: false })
-    .limit(8)
+    .limit(FEATURED_LIMIT)
 
-  const heroImage = products?.[0]?.images?.[0] ?? null
+  const featured = (products ?? []) as Product[]
 
   return (
     <div className="flex flex-col">
 
-      {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <section
-        className="flex flex-col items-center justify-center text-center px-6 py-20 md:py-28"
-        style={{ background: "var(--bg)" }}
-      >
-        <h1
-          className="text-6xl md:text-8xl italic leading-none mb-4"
-          style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
-        >
-          Theia
-        </h1>
-        <p
-          className="text-base mb-2"
-          style={{ fontFamily: "var(--font-caveat)", color: "var(--pink)", fontSize: "1.3rem" }}
-        >
-          moda que habla por ti
-        </p>
-        <p
-          className="text-xs uppercase tracking-[0.3em] mb-10 max-w-xs"
-          style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.45 }}
-        >
-          diseños propios · envíos a todo México
-        </p>
-        <Link
-          href="/coleccion"
-          className="inline-block px-8 py-3 text-xs uppercase tracking-[0.2em] transition-all hover:opacity-80"
-          style={{ fontFamily: "var(--font-space-mono)", background: "var(--ink)", color: "var(--bg)" }}
-        >
-          Ver colección
-        </Link>
-      </section>
-
-      <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
-
-      {/* ── CARD COLECCIÓN ───────────────────────────────────────── */}
-      <section>
-        <Link
-          href="/coleccion"
-          className="group relative overflow-hidden flex flex-col justify-end"
-          style={{ minHeight: "440px", display: "block" }}
-        >
-          {heroImage ? (
-            <img
-              src={heroImage}
-              alt="Colección Theia"
-              loading="eager"
-              className="object-cover group-hover:scale-105 transition-transform duration-700"
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-            />
-          ) : (
-            <div className="absolute inset-0" style={{ background: "var(--paper)" }} />
-          )}
-          <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(to top, rgba(26,26,26,0.7) 0%, transparent 60%)" }}
+      {/* ── HERO — tipográfico si HERO.image es null, editorial si no ── */}
+      {HERO.image ? (
+        <section className="relative" style={{ minHeight: "72vh" }}>
+          <img
+            src={HERO.image}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="relative z-10 p-8 md:p-12">
-            <p
-              className="text-sm mb-1"
-              style={{ fontFamily: "var(--font-caveat)", color: "var(--accent-2)", fontSize: "1.1rem" }}
-            >
-              diseño propio
-            </p>
-            <p
-              className="text-3xl md:text-4xl italic mb-2"
-              style={{ fontFamily: "var(--font-instrument)", color: "var(--bg)" }}
-            >
-              Colección Theia
-            </p>
-            <p
-              className="text-[10px] uppercase tracking-[0.2em]"
-              style={{ fontFamily: "var(--font-space-mono)", color: "var(--bg)", opacity: 0.75 }}
-            >
-              Explorar →
-            </p>
+          <div className="absolute inset-0" style={{ background: "rgba(26,26,26,0.32)" }} />
+          <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 h-full" style={{ minHeight: "72vh" }}>
+            <HeroCopy dark />
           </div>
-        </Link>
+        </section>
+      ) : (
+        <section
+          className="flex flex-col items-center justify-center text-center px-6"
+          style={{ background: "var(--bg)", minHeight: "72vh" }}
+        >
+          <HeroCopy />
+        </section>
+      )}
+
+      <Divider />
+
+      {/* ── INTRODUCCIÓN ─────────────────────────────────────────── */}
+      <section className="max-w-2xl mx-auto w-full px-6 py-20 text-center">
+        <Eyebrow>{INTRO.eyebrow}</Eyebrow>
+        <p
+          className="text-[15px] md:text-base leading-relaxed mt-4"
+          style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
+        >
+          {INTRO.text}
+        </p>
       </section>
 
-      <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
+      <Divider />
 
-      {/* ── NUEVOS INGRESOS ──────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto w-full px-4 py-16">
-        <div className="flex items-baseline justify-between mb-8">
-          <h2
-            className="text-2xl italic"
-            style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
-          >
-            Nuevos ingresos
-          </h2>
-          <Link
-            href="/coleccion"
-            className="text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-60"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.45 }}
-          >
-            Ver todo →
-          </Link>
+      {/* ── SELECCIÓN LIMITADA ───────────────────────────────────── */}
+      {featured.length > 0 && (
+        <>
+          <section className="max-w-6xl mx-auto w-full px-6 py-20">
+            <div className="flex items-baseline justify-between mb-10">
+              <h2
+                className="text-2xl md:text-3xl"
+                style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+              >
+                Selección actual
+              </h2>
+              <Link
+                href="/coleccion"
+                className="text-[11px] uppercase tracking-[0.1em] transition-opacity hover:opacity-60"
+                style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--text-secondary)" }}
+              >
+                Ver colección →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10">
+              {featured.map((product) => {
+                const images = getDisplayImages(product)
+                return (
+                  <Link key={product.id} href={`/productos/${product.id}`} className="group block">
+                    <div className="relative overflow-hidden aspect-[3/4]" style={{ background: "var(--paper)" }}>
+                      {images[0] && (
+                        <img
+                          src={images[0]}
+                          alt={getDisplayName(product)}
+                          loading="lazy"
+                          className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                          style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+                        />
+                      )}
+                    </div>
+                    <p
+                      className="text-[14px] mt-3"
+                      style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+                    >
+                      {getDisplayName(product)}
+                    </p>
+                    <p
+                      className="text-[13px] mt-0.5"
+                      style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
+                    >
+                      ${Number(product.sale_price).toLocaleString("es-MX")} MXN
+                    </p>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+          <Divider />
+        </>
+      )}
+
+      {/* ── MANIFIESTO ────────────────────────────────────────────── */}
+      <section className="max-w-2xl mx-auto w-full px-6 py-20 text-center">
+        <Eyebrow>{MANIFESTO.eyebrow}</Eyebrow>
+        <div className="mt-6 space-y-3">
+          {MANIFESTO.lines.map((line, i) => (
+            <p
+              key={i}
+              className="text-lg md:text-xl leading-snug"
+              style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+            >
+              {line}
+            </p>
+          ))}
         </div>
+      </section>
 
-        {products && products.length > 0 ? (
-          <ProductGrid products={products as Product[]} />
-        ) : (
-          <p
-            className="text-center py-16 text-sm"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
-          >
-            Nuevos diseños llegando pronto
-          </p>
-        )}
+      <Divider />
+
+      {/* ── MATERIA / FILOSOFÍA ──────────────────────────────────── */}
+      <section className="max-w-2xl mx-auto w-full px-6 py-20 text-center">
+        <Eyebrow>{MATERIALS.eyebrow}</Eyebrow>
+        <p
+          className="text-[15px] leading-relaxed mt-4"
+          style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
+        >
+          {MATERIALS.text}
+        </p>
+      </section>
+
+      <Divider />
+
+      {/* ── NEWSLETTER DISCRETO ──────────────────────────────────── */}
+      <section className="max-w-2xl mx-auto w-full px-6 py-16 flex flex-col items-center text-center gap-4">
+        <p
+          className="text-[13px]"
+          style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
+        >
+          Piezas nuevas, sin ruido.
+        </p>
+        <NewsletterForm />
       </section>
 
     </div>
+  )
+}
+
+function HeroCopy({ dark = false }: { dark?: boolean }) {
+  const secondary = dark ? "rgba(244,241,235,0.8)" : "var(--text-secondary)"
+  const ink = dark ? "var(--bg)" : "var(--ink)"
+  return (
+    <>
+      <p
+        className="text-[11px] uppercase tracking-[0.16em] mb-5"
+        style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: secondary }}
+      >
+        {HERO.eyebrow}
+      </p>
+      <h1
+        className="text-6xl md:text-8xl leading-none mb-6"
+        style={{ fontFamily: "var(--font-instrument)", color: ink }}
+      >
+        {HERO.title}
+      </h1>
+      <p
+        className="text-base md:text-lg mb-10 max-w-sm"
+        style={{ fontFamily: "var(--font-inter)", color: secondary }}
+      >
+        {HERO.text}
+      </p>
+      <Link
+        href={HERO.ctaHref}
+        className="inline-block px-8 py-3 text-[11px] uppercase tracking-[0.12em] transition-opacity hover:opacity-80"
+        style={{
+          fontFamily: "var(--font-inter)",
+          fontWeight: 500,
+          background: dark ? "var(--bg)" : "var(--ink)",
+          color: dark ? "var(--ink)" : "var(--bg)",
+        }}
+      >
+        {HERO.cta}
+      </Link>
+    </>
   )
 }

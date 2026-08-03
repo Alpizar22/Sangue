@@ -1,12 +1,104 @@
 "use client"
 
 import { useState } from "react"
-import { updateProduct } from "@/app/(admin)/admin/productos/actions"
+import { updateProduct, updateProductPresentation } from "@/app/(admin)/admin/productos/actions"
 import type { Product } from "@/types"
 
 const CATEGORIES = ["Tops", "Jerseys", "Vestidos", "Pantalones", "Faldas", "Shorts", "Accesorios"]
 const SIZES = ["XS", "S", "M", "L", "XL", "XXL"]
 const MARKUP = 2.5
+
+function PresentationForm({ product }: { product: Product }) {
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    setSaved(false)
+    setPending(true)
+    const { error: serverError } = await updateProductPresentation(product.id, new FormData(e.currentTarget))
+    setPending(false)
+    if (serverError) {
+      setError(serverError)
+      return
+    }
+    setSaved(true)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl text-gray-900 bg-gray-50 border border-gray-200 rounded-lg p-5">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-800">Curaduría editorial</h3>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Opcional. Si se deja vacío, la tienda muestra un nombre generado a partir del
+          título real de Printful ({product.title}). Un re-sync de Printful nunca borra
+          estos campos.
+        </p>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Nombre comercial</label>
+          <input
+            name="display_name"
+            defaultValue={product.display_name ?? ""}
+            placeholder="Essential Long Sleeve"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-black"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Descriptor</label>
+          <input
+            name="subtitle"
+            defaultValue={product.subtitle ?? ""}
+            placeholder="Heavyweight Cotton"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-black"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-1">Capítulo</label>
+        <input
+          name="chapter"
+          defaultValue={product.chapter ?? ""}
+          placeholder="Chapter I — Light"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-black"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-700 mb-1">Historia</label>
+        <textarea
+          name="story"
+          rows={2}
+          defaultValue={product.story ?? ""}
+          placeholder="Diseñada para el uso diario y construida para permanecer."
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-black resize-none"
+        />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={pending}
+          className="bg-white border border-gray-300 text-gray-800 px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 disabled:opacity-50"
+        >
+          {pending ? "Guardando…" : "Guardar curaduría"}
+        </button>
+        {saved && <span className="text-xs text-green-600">Guardado</span>}
+      </div>
+    </form>
+  )
+}
 
 export default function EditProductForm({ product }: { product: Product }) {
   const [salePrice, setSalePrice] = useState(String(product.sale_price))
@@ -39,6 +131,8 @@ export default function EditProductForm({ product }: { product: Product }) {
   }
 
   return (
+    <div className="space-y-8">
+    <PresentationForm product={product} />
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl text-gray-900">
       {/* Pass existing images as hidden field so updateProduct can keep them */}
       <input type="hidden" name="existing_images" value={product.images.join(",")} />
@@ -212,5 +306,6 @@ export default function EditProductForm({ product }: { product: Product }) {
         </a>
       </div>
     </form>
+    </div>
   )
 }

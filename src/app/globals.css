@@ -1,37 +1,67 @@
 @import "tailwindcss";
 
+/*
+ * Sistema de tokens Theia — lujo discreto / minimalismo cálido.
+ * Se mantienen los NOMBRES de variable ya usados en todo el sitio
+ * (--bg, --ink, --paper, --accent-2) para no tener que tocar cada
+ * componente; solo se reasignan los valores a la paleta editorial.
+ */
 :root {
-  --bg:       #f4f1ec;
-  --ink:      #1a1a1a;
-  --paper:    #fbf9f5;
-  --accent:   #2d3a5f;
-  --accent-2: #c8a96a;
-  --pink:     #d89aa0;
-  --night:    #1a1f2e;
-  --night-muted: #2d3347;
-  --night-text:  #e8e4dd;
+  --bg:              #f4f1eb;
+  --ink:              #1a1a1a;
+  --paper:            #faf8f4;
+  --text-secondary:   #77736c;
+  --border:           #ddd8cf;
+  --accent:           #2d3a5f;
+  --accent-2:         #9a7b4f;
+  --night:            #1a1f2e;
+  --night-muted:      #2d3347;
+  --night-text:       #e8e4dd;
+
+  /*
+   * Compat: el sitio entero referencia var(--font-space-mono) inline en
+   * decenas de componentes (labels, precios, botones). En vez de tocar
+   * cada uno, se retira la tipografía monoespaciada del sistema y esta
+   * variable pasa a resolver a la sans (Inter) — así toda esa superficie
+   * queda "sans limpia" de un solo cambio, tal como pide el brief.
+   */
+  --font-space-mono: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
 }
 
 @theme inline {
-  --color-bg:       var(--bg);
-  --color-ink:      var(--ink);
-  --color-paper:    var(--paper);
-  --color-accent:   var(--accent);
-  --color-accent2:  var(--accent-2);
-  --color-pink:     var(--pink);
-  --color-night:    var(--night);
-  --color-night-text: var(--night-text);
+  --color-bg:              var(--bg);
+  --color-ink:              var(--ink);
+  --color-paper:            var(--paper);
+  --color-text-secondary:   var(--text-secondary);
+  --color-border:           var(--border);
+  --color-accent:           var(--accent);
+  --color-accent2:          var(--accent-2);
+  --color-night:            var(--night);
+  --color-night-text:       var(--night-text);
   --font-serif:    var(--font-instrument);
-  --font-mono:     var(--font-space-mono);
-  --font-cursive:  var(--font-caveat);
+  --font-sans:     var(--font-inter);
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-space-mono), "Courier New", monospace;
+  font-family: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
 }
 
 * {
   box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 1.5px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

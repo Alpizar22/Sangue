@@ -4,6 +4,8 @@ import { useState } from "react"
 import type { Product } from "@/types"
 import ProductGallery from "./ProductGallery"
 import AddToCartButton from "./AddToCartButton"
+import { getDisplayName, getSubtitle, getDisplayImages } from "@/lib/presentation"
+import { Truck, ShieldCheck } from "lucide-react"
 
 interface Props {
   product: Product
@@ -32,27 +34,23 @@ const SIZE_GUIDE = [
 
 function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <details
-      className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid rgba(26,26,26,0.08)" }}
-    >
+    <details style={{ borderBottom: "1px solid var(--border)" }}>
       <summary
-        className="px-4 py-3.5 cursor-pointer flex items-center justify-between select-none"
+        className="py-4 cursor-pointer flex items-center justify-between select-none"
         style={{
-          fontFamily: "var(--font-space-mono)",
-          fontSize: "10px",
+          fontFamily: "var(--font-inter)",
+          fontWeight: 500,
+          fontSize: "11px",
           textTransform: "uppercase",
-          letterSpacing: "0.2em",
+          letterSpacing: "0.08em",
           color: "var(--ink)",
-          opacity: 0.6,
-          background: "var(--paper)",
           listStyle: "none",
         }}
       >
         <span>{title}</span>
-        <span className="text-base leading-none" style={{ opacity: 0.5 }}>+</span>
+        <span className="text-base leading-none" style={{ color: "var(--text-secondary)" }}>+</span>
       </summary>
-      <div className="px-4 py-4" style={{ background: "var(--bg)" }}>
+      <div className="pb-4" style={{ background: "var(--bg)" }}>
         {children}
       </div>
     </details>
@@ -63,7 +61,7 @@ export default function ProductInteractive({ product }: Props) {
   const [activeIndex, setActiveIndex] = useState(0)
 
   function handleColorChange(_color: string, colorIndex: number) {
-    const imageCount = product.images?.length ?? 0
+    const imageCount = getDisplayImages(product).length
     if (imageCount > 0 && colorIndex >= 0) {
       setActiveIndex(colorIndex < imageCount ? colorIndex : 0)
     }
@@ -71,14 +69,16 @@ export default function ProductInteractive({ product }: Props) {
 
   const desc = product.description ?? ""
   const material = desc ? extractMaterial(desc) : null
+  const displayName = getDisplayName(product)
+  const subtitle = getSubtitle(product)
 
   return (
     <div className="grid md:grid-cols-2 gap-8 lg:gap-16">
 
       {/* ── LEFT: Gallery ─────────────────────────────────────── */}
       <ProductGallery
-        images={product.images ?? []}
-        title={product.title}
+        images={getDisplayImages(product)}
+        title={displayName}
         activeIndex={activeIndex}
         onActiveChange={setActiveIndex}
       />
@@ -86,134 +86,121 @@ export default function ProductInteractive({ product }: Props) {
       {/* ── RIGHT: Info + actions ─────────────────────────────── */}
       <div className="space-y-5">
 
-        {/* 2. Categoría */}
-        {product.category && (
+        {/* Eyebrow — capítulo curado, solo si existe (no se inventa) */}
+        {product.chapter && (
           <p
-            className="text-[10px] uppercase tracking-[0.25em]"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+            className="text-[11px] uppercase tracking-[0.1em]"
+            style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--text-secondary)" }}
           >
-            {product.category}
+            {product.chapter}
           </p>
         )}
 
-        {/* 3. Título */}
-        <h1
-          className="text-2xl md:text-3xl italic leading-tight"
-          style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
-        >
-          {product.title}
-        </h1>
+        {/* Nombre + descriptor */}
+        <div>
+          <h1
+            className="text-2xl md:text-3xl leading-tight"
+            style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+          >
+            {displayName}
+          </h1>
+          {subtitle && (
+            <p
+              className="text-[13px] mt-1"
+              style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
+            >
+              {subtitle}
+            </p>
+          )}
+        </div>
 
-        {/* 4. Precio */}
+        {/* Precio */}
         <p
-          className="text-3xl"
-          style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+          className="text-2xl"
+          style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--ink)" }}
         >
-          ${Number(product.sale_price).toLocaleString("es-MX")}
+          ${Number(product.sale_price).toLocaleString("es-MX")} MXN
         </p>
 
-        <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
+        <div style={{ height: "1px", background: "var(--border)" }} />
 
-        {/* 5+6+7. Color → Talla → Botón (order enforced inside AddToCartButton) */}
+        {/* Color → Talla → CTA */}
         <AddToCartButton product={product} onColorChange={handleColorChange} />
 
-        <div style={{ height: "1px", background: "rgba(26,26,26,0.1)" }} />
+        <div style={{ height: "1px", background: "var(--border)" }} />
 
-        {/* 8. Envío y entrega */}
-        <div
-          className="rounded-xl p-4 space-y-2"
-          style={{ background: "var(--paper)", border: "1px solid rgba(26,26,26,0.08)" }}
-        >
-          <p
-            className="text-[10px] uppercase tracking-[0.2em] mb-3"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
-          >
-            Envío y entrega
-          </p>
+        {/* Entrega */}
+        <div className="space-y-2.5">
           <div className="flex items-start gap-3">
-            <span className="text-base mt-0.5">📦</span>
+            <Truck size={16} strokeWidth={1.5} style={{ color: "var(--text-secondary)", marginTop: "1px", flexShrink: 0 }} />
             <div>
               <p
-                className="text-[12px] font-medium mb-0.5"
-                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+                className="text-[12px]"
+                style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--ink)" }}
               >
-                Envío estándar · 7–15 días hábiles
+                Envío estándar · 10–17 días hábiles
               </p>
               <p
-                className="text-[11px]"
-                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+                className="text-[12px]"
+                style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
               >
-                A toda la República Mexicana · Seguimiento incluido
+                A toda la República Mexicana · seguimiento incluido
               </p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <span className="text-base mt-0.5">🔒</span>
+            <ShieldCheck size={16} strokeWidth={1.5} style={{ color: "var(--text-secondary)", marginTop: "1px", flexShrink: 0 }} />
             <p
-              className="text-[11px]"
-              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+              className="text-[12px]"
+              style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
             >
-              Pago seguro con MercadoPago · Tarjeta, transferencia o efectivo
+              Pago seguro con MercadoPago
             </p>
           </div>
         </div>
 
-        {/* 9. Detalles del producto */}
-        <Accordion title="Detalles del producto">
-          <div className="space-y-3">
-            {material && (
-              <div>
-                <p
-                  className="text-[9px] uppercase tracking-[0.2em] mb-1"
-                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
-                >
-                  Material
-                </p>
-                <p
-                  className="text-[12px] leading-relaxed"
-                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.75 }}
-                >
-                  {material}
-                </p>
-              </div>
-            )}
-            {desc ? (
-              <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink)", opacity: 0.65 }}>
-                {desc}
-              </p>
-            ) : (
-              <p
-                className="text-[12px] leading-relaxed"
-                style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.6 }}
-              >
-                Consulta con nosotros para más detalles.{" "}
-                <a
-                  href={WHATSAPP}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "var(--accent-2)", textDecoration: "underline" }}
-                >
-                  Escríbenos por WhatsApp →
-                </a>
-              </p>
-            )}
-          </div>
-        </Accordion>
+        <div style={{ height: "1px", background: "var(--border)" }} />
 
-        {/* 10. Guía de tallas */}
+        {/* Historia — solo si fue curada */}
+        {product.story && (
+          <Accordion title="La pieza">
+            <p className="text-[13px] leading-relaxed" style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}>
+              {product.story}
+            </p>
+          </Accordion>
+        )}
+
+        {/* Especificaciones + materiales (de la descripción real) */}
+        {desc && (
+          <Accordion title="Especificaciones">
+            <p className="text-[13px] leading-relaxed" style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}>
+              {desc}
+            </p>
+          </Accordion>
+        )}
+
+        {material && (
+          <Accordion title="Materiales">
+            <p className="text-[13px] leading-relaxed" style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}>
+              {material}
+            </p>
+          </Accordion>
+        )}
+
+        {/* Guía de tallas */}
         <Accordion title="Guía de tallas">
           <div className="overflow-x-auto">
             <table
-              className="w-full text-[11px]"
-              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+              className="w-full text-[12px]"
+              style={{ fontFamily: "var(--font-inter)", color: "var(--ink)" }}
             >
               <thead>
-                <tr style={{ borderBottom: "1px solid rgba(26,26,26,0.1)" }}>
+                <tr style={{ borderBottom: "1px solid var(--border)" }}>
                   {["Talla", "Busto", "Cintura", "Cadera"].map((h) => (
                     <th
                       key={h}
                       className="py-2 pr-4 text-left font-normal"
-                      style={{ opacity: 0.4, fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.15em" }}
+                      style={{ color: "var(--text-secondary)", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em" }}
                     >
                       {h}
                     </th>
@@ -222,36 +209,48 @@ export default function ProductInteractive({ product }: Props) {
               </thead>
               <tbody>
                 {SIZE_GUIDE.map(({ talla, busto, cintura, cadera }) => (
-                  <tr key={talla} style={{ borderBottom: "1px solid rgba(26,26,26,0.05)" }}>
-                    <td className="py-2 pr-4 font-medium" style={{ opacity: 0.9 }}>{talla}</td>
-                    <td className="py-2 pr-4" style={{ opacity: 0.65 }}>{busto} cm</td>
-                    <td className="py-2 pr-4" style={{ opacity: 0.65 }}>{cintura} cm</td>
-                    <td className="py-2 pr-4" style={{ opacity: 0.65 }}>{cadera} cm</td>
+                  <tr key={talla} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <td className="py-2 pr-4" style={{ fontWeight: 500 }}>{talla}</td>
+                    <td className="py-2 pr-4" style={{ color: "var(--text-secondary)" }}>{busto} cm</td>
+                    <td className="py-2 pr-4" style={{ color: "var(--text-secondary)" }}>{cintura} cm</td>
+                    <td className="py-2 pr-4" style={{ color: "var(--text-secondary)" }}>{cadera} cm</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <p
-              className="mt-3 text-[10px]"
-              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+              className="mt-3 text-[11px]"
+              style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
             >
               Medidas orientativas. Ante dudas, consulta por WhatsApp.
             </p>
           </div>
         </Accordion>
 
-        {/* 11. Política de devoluciones */}
-        <Accordion title="Política de devoluciones">
+        {/* Cuidados */}
+        <Accordion title="Cuidados">
+          <p className="text-[13px] leading-relaxed" style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}>
+            Lavar a máquina con agua fría, del revés. No usar blanqueador. Secar a la
+            sombra o a baja temperatura. Planchar a temperatura media si es necesario.
+          </p>
+        </Accordion>
+
+        {/* Envíos y devoluciones */}
+        <Accordion title="Envíos y devoluciones">
           <div
-            className="space-y-2 text-[12px] leading-relaxed"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.65 }}
+            className="space-y-2 text-[13px] leading-relaxed"
+            style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
           >
-            <p>Aceptamos cambios dentro de los 7 días posteriores a la recepción del pedido.</p>
-            <p>El producto debe estar sin uso, con etiquetas y en su empaque original.</p>
+            <p>Cada prenda se produce bajo demanda especialmente para tu pedido.</p>
+            <p>Aceptamos cambios dentro de los 7 días posteriores a la recepción, con la prenda sin uso y en su empaque original.</p>
             <p>
               Para iniciar un cambio escríbenos a{" "}
               <a href="mailto:hola@theia.mx" style={{ color: "var(--accent-2)" }}>
                 hola@theia.mx
+              </a>{" "}
+              o por{" "}
+              <a href={WHATSAPP} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-2)" }}>
+                WhatsApp
               </a>{" "}
               con tu número de pedido.
             </p>

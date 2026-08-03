@@ -5,6 +5,7 @@ import type { Product } from "@/types"
 import Link from "next/link"
 import ProductInteractive from "@/components/store/ProductInteractive"
 import ProductCard from "@/components/store/ProductCard"
+import { getDisplayName } from "@/lib/presentation"
 
 export const revalidate = 300
 
@@ -17,22 +18,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient()
   const { data } = await supabase
     .from("products")
-    .select("title, description, images")
+    .select("title, description, images, display_name")
     .eq("id", slug)
     .single()
 
   if (!data) return { title: "Producto no encontrado" }
 
+  const name = getDisplayName(data as Pick<Product, "display_name" | "title">)
+
   return {
-    title: `${data.title} — Theia`,
+    title: `${name} — Theia`,
     description:
       data.description?.slice(0, 155) ??
-      `${data.title} — disponible en Theia con envío a todo México.`,
+      `${name} — disponible en Theia con envío a todo México.`,
     openGraph: {
-      title: data.title,
+      title: name,
       description:
         data.description?.slice(0, 155) ??
-        `${data.title} — disponible en Theia con envío a todo México.`,
+        `${name} — disponible en Theia con envío a todo México.`,
       images: data.images?.[0] ? [{ url: data.images[0] }] : [],
     },
   }
@@ -51,15 +54,22 @@ export default async function ProductPage({ params }: Props) {
 
   if (!product) notFound()
 
-  // Related products: same category, exclude current, random 4 from latest 8
-  const { data: related } = await supabase
+  const displayName = getDisplayName(product as Product)
+
+  // Productos relacionados: mismo tipo de prenda (subcategory), excluye el actual
+  let relatedQuery = supabase
     .from("products")
     .select("*")
     .eq("status", "active")
-    .eq("category", product.category)
     .neq("id", product.id)
     .order("created_at", { ascending: false })
     .limit(8)
+
+  relatedQuery = product.subcategory
+    ? relatedQuery.eq("subcategory", product.subcategory)
+    : relatedQuery
+
+  const { data: related } = await relatedQuery
 
   const relatedProducts: Product[] = (related ?? [])
     .sort(() => Math.random() - 0.5)
@@ -73,26 +83,15 @@ export default async function ProductPage({ params }: Props) {
 
         {/* Breadcrumb */}
         <nav
-          className="text-[10px] uppercase tracking-[0.2em] mb-8 flex items-center gap-2"
-          style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
+          className="text-[11px] uppercase tracking-[0.06em] mb-8 flex items-center gap-2"
+          style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
         >
-          <Link href="/coleccion" className="hover:opacity-100 transition-opacity">
+          <Link href="/coleccion" className="hover:text-[var(--ink)] transition-colors">
             Colección
           </Link>
-          {product.category && (
-            <>
-              <span>/</span>
-              <Link
-                href={`/${product.category === "Jerseys" ? "jerseys" : `coleccion?categoria=${encodeURIComponent(product.category)}`}`}
-                className="hover:opacity-100 transition-opacity"
-              >
-                {product.category}
-              </Link>
-            </>
-          )}
           <span>/</span>
-          <span className="truncate max-w-[180px]" style={{ opacity: 0.7, color: "var(--ink)" }}>
-            {product.title}
+          <span className="truncate max-w-[220px]" style={{ color: "var(--ink)" }}>
+            {displayName}
           </span>
         </nav>
 
@@ -105,25 +104,23 @@ export default async function ProductPage({ params }: Props) {
       {relatedProducts.length > 0 && (
         <section
           className="mt-8 md:mt-16"
-          style={{ borderTop: "1px solid rgba(26,26,26,0.08)", background: "var(--paper)" }}
+          style={{ borderTop: "1px solid var(--border)", background: "var(--paper)" }}
         >
           <div className="max-w-6xl mx-auto px-4 py-10 md:py-14">
             <div className="flex items-baseline justify-between mb-8">
               <h2
-                className="text-2xl italic"
+                className="text-2xl"
                 style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
               >
                 También te puede gustar
               </h2>
-              {product.category && (
-                <Link
-                  href={`/${product.category === "Jerseys" ? "jerseys" : `coleccion?categoria=${encodeURIComponent(product.category)}`}`}
-                  className="text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-100"
-                  style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.4 }}
-                >
-                  Ver todo →
-                </Link>
-              )}
+              <Link
+                href="/coleccion"
+                className="text-[11px] uppercase tracking-[0.06em] transition-colors hover:text-[var(--ink)]"
+                style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
+              >
+                Ver todo →
+              </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {relatedProducts.map((p) => (

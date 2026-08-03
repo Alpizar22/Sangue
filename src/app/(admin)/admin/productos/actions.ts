@@ -148,3 +148,27 @@ export async function updateProduct(
 
   return { error: null }
 }
+
+export async function updateProductPresentation(
+  id: string,
+  formData: FormData
+): Promise<{ error: string | null }> {
+  const supabase = adminSupabase()
+
+  const displayName = String(formData.get("display_name") ?? "").trim() || null
+  const subtitle = String(formData.get("subtitle") ?? "").trim() || null
+  const chapter = String(formData.get("chapter") ?? "").trim() || null
+  const story = String(formData.get("story") ?? "").trim() || null
+
+  const { error } = await supabase
+    .from("products")
+    .update({ display_name: displayName, subtitle, chapter, story })
+    .eq("id", id)
+
+  if (error) {
+    console.error("[updateProductPresentation] error:", error)
+    return { error: `Error al guardar curaduría: ${error.message}` }
+  }
+
+  return { error: null }
+}

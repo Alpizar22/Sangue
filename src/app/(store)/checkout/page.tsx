@@ -503,7 +503,7 @@ export default function CheckoutPage() {
               className="text-[10px] text-center"
               style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
             >
-              Pago seguro con MercadoPago · 15–25 días hábiles
+              Pago seguro con MercadoPago · 10–17 días hábiles
             </p>
           </div>
         </div>

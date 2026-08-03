@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { CheckCircle2, PackageSearch, XCircle, MessageCircle, Mail } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 
 export const metadata: Metadata = {
   title: "Devoluciones y Cambios — Theia",
@@ -38,13 +40,13 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   )
 }
 
-function PolicyRow({ icon, title, desc }: { icon: string; title: string; desc: string }) {
+function PolicyRow({ icon: Icon, title, desc }: { icon: LucideIcon; title: string; desc: string }) {
   return (
     <div
       className="flex gap-4 p-4"
-      style={{ border: "1px solid rgba(26,26,26,0.08)", background: "var(--paper)" }}
+      style={{ border: "1px solid var(--border)", background: "var(--paper)" }}
     >
-      <span className="text-lg flex-shrink-0">{icon}</span>
+      <Icon size={18} strokeWidth={1.5} className="flex-shrink-0" style={{ color: "var(--text-secondary)", marginTop: "2px" }} />
       <div>
         <p
           className="text-[12px] font-medium mb-0.5"
@@ -86,17 +88,17 @@ export default function DevolucionesPage() {
           {/* Política en tarjetas */}
           <div className="space-y-3">
             <PolicyRow
-              icon="✅"
+              icon={CheckCircle2}
               title="Producto dañado o con defecto"
               desc="Acepta reporte dentro de los 7 días de recibido. Envíanos foto del problema por WhatsApp con tu número de orden. Gestionamos con el proveedor: reenvío del producto o reembolso completo."
             />
             <PolicyRow
-              icon="📦"
+              icon={PackageSearch}
               title="Pedido no entregado en 45 días"
               desc="Si tu pedido no llega en 45 días corridos desde el despacho, te emitimos un reembolso completo. Aplica en ausencia de retención aduanal activa."
             />
             <PolicyRow
-              icon="❌"
+              icon={XCircle}
               title="Cambio por talla u otro motivo"
               desc="No aceptamos devoluciones físicas por cambio de opinión o talla incorrecta. Cada prenda se imprime bajo demanda especialmente para tu pedido, por lo que no puede reingresarse a inventario. Por eso incluimos guía de tallas detallada y atendemos dudas antes de la compra."
             />
@@ -157,7 +159,7 @@ export default function DevolucionesPage() {
                 className="flex items-center gap-2 text-[12px] transition-opacity hover:opacity-80"
                 style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
               >
-                <span>💬</span>
+                <MessageCircle size={14} strokeWidth={1.5} />
                 WhatsApp (respuesta más rápida)
               </a>
               <a
@@ -165,7 +167,7 @@ export default function DevolucionesPage() {
                 className="flex items-center gap-2 text-[12px] transition-opacity hover:opacity-80"
                 style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
               >
-                <span>✉</span>
+                <Mail size={14} strokeWidth={1.5} />
                 nasusagency@gmail.com
               </a>
             </div>

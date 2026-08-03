@@ -67,8 +67,8 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
-        className="w-full max-w-xl rounded-xl overflow-hidden shadow-2xl"
-        style={{ background: "var(--paper)", border: "1px solid rgba(26,26,26,0.12)" }}
+        className="w-full max-w-xl overflow-hidden"
+        style={{ background: "var(--paper)", border: "1px solid var(--border)" }}
       >
         {/* Input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "rgba(26,26,26,0.1)" }}>
@@ -105,11 +105,11 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
                       src={item.images[0]}
                       alt={item.title}
                       loading="lazy"
-                      className="rounded-lg object-cover flex-shrink-0"
+                      className="object-cover flex-shrink-0"
                       style={{ width: 44, height: 44 }}
                     />
                   ) : (
-                    <div className="w-11 h-11 rounded-lg bg-gray-100 flex-shrink-0" />
+                    <div className="w-11 h-11 flex-shrink-0" style={{ background: "var(--border)" }} />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--ink)" }}>{item.title}</p>

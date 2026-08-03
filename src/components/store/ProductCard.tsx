@@ -1,12 +1,12 @@
 import Link from "next/link"
 import type { Product } from "@/types"
-
-const NEW_THRESHOLD_DAYS = 14
+import { getDisplayName, getSubtitle, getDisplayImages } from "@/lib/presentation"
+import { colorToCss } from "@/lib/colors"
 
 export default function ProductCard({ product }: { product: Product }) {
-  const isNew = product.created_at
-    ? Date.now() - new Date(product.created_at).getTime() < NEW_THRESHOLD_DAYS * 86400_000
-    : false
+  const images = getDisplayImages(product)
+  const subtitle = getSubtitle(product)
+  const colors = (product.colors ?? []).filter((c) => colorToCss(c))
 
   return (
     <Link href={`/productos/${product.id}`} className="group block">
@@ -14,59 +14,63 @@ export default function ProductCard({ product }: { product: Product }) {
         className="relative overflow-hidden aspect-[3/4]"
         style={{ background: "var(--paper)" }}
       >
-        {product.images?.[0] ? (
+        {images[0] ? (
           <img
-            src={product.images[0]}
-            alt={product.title}
+            src={images[0]}
+            alt={getDisplayName(product)}
             loading="lazy"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
           />
         ) : (
           <div
             className="w-full h-full flex items-center justify-center text-xs"
-            style={{ color: "var(--ink)", opacity: 0.3 }}
+            style={{ color: "var(--text-secondary)" }}
           >
             Sin imagen
           </div>
         )}
-
-        {/* Badge NUEVO */}
-        {isNew && (
-          <span
-            className="absolute top-2.5 left-2.5 px-2 py-0.5 text-[8px] uppercase tracking-[0.2em]"
-            style={{
-              fontFamily: "var(--font-space-mono)",
-              background: "var(--ink)",
-              color: "var(--bg)",
-            }}
-          >
-            Nuevo
-          </span>
-        )}
       </div>
 
-      <div className="pt-2 pb-3 px-0.5">
-        {product.subcategory && (
+      <div className="pt-3 pb-1 px-0.5">
+        <p
+          className="text-[14px] leading-snug"
+          style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
+        >
+          {getDisplayName(product)}
+        </p>
+        {subtitle && (
           <p
-            className="text-[9px] uppercase tracking-[0.2em] mb-1"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+            className="text-[12px] mt-0.5"
+            style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
           >
-            {product.subcategory}
+            {subtitle}
           </p>
         )}
         <p
-          className="text-[12px] leading-tight line-clamp-2 mb-1"
-          style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)" }}
+          className="text-[13px] mt-1"
+          style={{ fontFamily: "var(--font-inter)", color: "var(--ink)" }}
         >
-          {product.title}
+          ${Number(product.sale_price).toLocaleString("es-MX")} MXN
         </p>
-        <p
-          className="text-[12px] font-medium"
-          style={{ fontFamily: "var(--font-space-mono)", color: "var(--accent-2)" }}
-        >
-          ${Number(product.sale_price).toLocaleString("es-MX")}
-        </p>
+
+        {colors.length > 1 && (
+          <div className="flex items-center gap-1.5 mt-2">
+            {colors.slice(0, 6).map((color) => (
+              <span
+                key={color}
+                title={color}
+                className="block rounded-full"
+                style={{
+                  width: 10,
+                  height: 10,
+                  background: colorToCss(color) ?? "transparent",
+                  border: "1px solid var(--border)",
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </Link>
   )

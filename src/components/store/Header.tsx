@@ -9,7 +9,8 @@ const SearchModal = lazy(() => import("./SearchModal"))
 
 const NAV_LINKS = [
   { href: "/coleccion", label: "Colección" },
-  { href: "/jerseys",   label: "Jerseys"   },
+  { href: "/la-casa",   label: "La Casa"   },
+  { href: "/filosofia", label: "Filosofía" },
 ]
 
 export default function Header() {
@@ -22,7 +23,7 @@ export default function Header() {
   return (
     <header
       className="sticky top-0 z-50"
-      style={{ background: "var(--paper)", borderBottom: "1px solid rgba(26,26,26,0.1)" }}
+      style={{ background: "var(--paper)", borderBottom: "1px solid var(--border)" }}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
@@ -32,11 +33,11 @@ export default function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-[10px] uppercase tracking-[0.2em] transition-opacity hover:opacity-100 hidden sm:block"
+              className="text-[11px] uppercase tracking-[0.1em] transition-colors hidden sm:block"
               style={{
-                fontFamily: "var(--font-space-mono)",
-                color: "var(--ink)",
-                opacity: 0.5,
+                fontFamily: "var(--font-inter)",
+                fontWeight: 500,
+                color: "var(--text-secondary)",
               }}
             >
               {link.label}
@@ -44,19 +45,19 @@ export default function Header() {
           ))}
           {/* Mobile: solo el primer link */}
           <Link
-            href="/productos"
-            className="text-[10px] uppercase tracking-[0.2em] sm:hidden"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.5 }}
+            href="/coleccion"
+            className="text-[11px] uppercase tracking-[0.1em] sm:hidden"
+            style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--text-secondary)" }}
           >
-            Tienda
+            Colección
           </Link>
         </nav>
 
-        {/* Logo centrado */}
+        {/* Logo centrado — wordmark estable, no decorativo */}
         <Link
           href="/"
-          className="text-[28px] leading-none tracking-wide transition-opacity hover:opacity-70 absolute left-1/2 -translate-x-1/2"
-          style={{ fontFamily: "var(--font-instrument)", fontStyle: "italic", color: "var(--ink)" }}
+          className="text-[22px] leading-none tracking-wide transition-opacity hover:opacity-80 absolute left-1/2 -translate-x-1/2"
+          style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
         >
           Theia
         </Link>
@@ -69,18 +70,19 @@ export default function Header() {
             style={{ color: "var(--ink)" }}
             aria-label="Buscar"
           >
-            <Search size={18} strokeWidth={1.5} />
+            <Search size={17} strokeWidth={1.5} />
           </button>
           <Link
             href="/carrito"
             className="relative transition-opacity hover:opacity-70"
             style={{ color: "var(--ink)" }}
+            aria-label="Bolsa"
           >
-            <ShoppingBag size={19} strokeWidth={1.5} />
+            <ShoppingBag size={18} strokeWidth={1.5} />
             {mounted && itemCount > 0 && (
               <span
-                className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center"
-                style={{ background: "var(--accent-2)", fontFamily: "var(--font-space-mono)" }}
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-white text-[9px] flex items-center justify-center"
+                style={{ background: "var(--accent-2)", fontFamily: "var(--font-inter)", fontWeight: 600 }}
               >
                 {itemCount > 9 ? "9+" : itemCount}
               </span>

@@ -26,7 +26,7 @@ export default function ProductGallery({ images, title, activeIndex, onActiveCha
   if (!images?.length) {
     return (
       <div
-        className="w-full aspect-[3/4] rounded-xl flex items-center justify-center text-sm"
+        className="w-full aspect-[3/4] rounded flex items-center justify-center text-sm"
         style={{ background: "var(--paper)", color: "var(--ink)", opacity: 0.3 }}
       >
         Sin imagen
@@ -53,7 +53,7 @@ export default function ProductGallery({ images, title, activeIndex, onActiveCha
       {/* ── MOBILE: button prev/next carousel ───────────────────── */}
       <div className="lg:hidden space-y-2">
         <div
-          className="relative w-full overflow-hidden rounded-xl"
+          className="relative w-full overflow-hidden rounded"
           style={{ aspectRatio: "3/4" }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -141,7 +141,7 @@ export default function ProductGallery({ images, title, activeIndex, onActiveCha
       {/* ── DESKTOP: main image + thumbnail grid ─────────────────── */}
       <div className="hidden lg:block space-y-3">
         <div
-          className="relative w-full aspect-[3/4] rounded-xl overflow-hidden cursor-zoom-in"
+          className="relative w-full aspect-[3/4] rounded overflow-hidden cursor-zoom-in"
           style={{ background: "var(--paper)" }}
         >
           <img

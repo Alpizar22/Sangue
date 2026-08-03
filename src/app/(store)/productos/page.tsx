@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import type { Metadata } from "next"
 import type { Product } from "@/types"
 import ProductGrid from "@/components/store/ProductGrid"
+import { HERO } from "@/lib/editorial"
 
 export const revalidate = 60
 
@@ -38,73 +39,81 @@ export default async function ProductosPage({ searchParams }: { searchParams: Se
   // así no hay que tocar código cada vez que se agregan nuevos diseños.
   const tipos = [...new Set((allActive ?? []).map((p) => p.subcategory).filter(Boolean))] as string[]
 
-  const heading = categoria || "Colección Theia"
-
   return (
     <div style={{ background: "var(--bg)", minHeight: "60vh" }}>
-      <div className="max-w-7xl mx-auto px-4 py-10">
+      <div className="max-w-7xl mx-auto px-6 py-16 md:py-20">
 
-        {/* Título + filtros por tipo de prenda */}
-        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-4 mb-8">
+        {/* Encabezado editorial */}
+        <div className="max-w-xl mb-14">
+          <p
+            className="text-[11px] uppercase tracking-[0.16em] mb-4"
+            style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--text-secondary)" }}
+          >
+            {categoria ? categoria : HERO.eyebrow}
+          </p>
           <h1
-            className="text-3xl italic"
+            className="text-4xl md:text-5xl mb-4"
             style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
           >
-            {heading}
+            {categoria ? categoria : HERO.title}
           </h1>
-          {tipos.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              <a
-                href="/productos"
-                className="px-3 py-1 text-[10px] uppercase tracking-[0.15em] transition-all"
-                style={{
-                  fontFamily: "var(--font-space-mono)",
-                  background: !categoria ? "var(--ink)" : "transparent",
-                  color: !categoria ? "var(--bg)" : "var(--ink)",
-                  border: "1px solid rgba(26,26,26,0.2)",
-                  opacity: !categoria ? 1 : 0.55,
-                }}
-              >
-                Todo
-              </a>
-              {tipos.map((tipo) => {
-                const active = categoria === tipo
-                return (
-                  <a
-                    key={tipo}
-                    href={`/productos?categoria=${encodeURIComponent(tipo)}`}
-                    className="px-3 py-1 text-[10px] uppercase tracking-[0.15em] transition-all"
-                    style={{
-                      fontFamily: "var(--font-space-mono)",
-                      background: active ? "var(--ink)" : "transparent",
-                      color: active ? "var(--bg)" : "var(--ink)",
-                      border: "1px solid rgba(26,26,26,0.2)",
-                      opacity: active ? 1 : 0.55,
-                    }}
-                  >
-                    {tipo}
-                  </a>
-                )
-              })}
-            </div>
-          )}
+          <p
+            className="text-[14px] leading-relaxed"
+            style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
+          >
+            Una selección de esenciales construidos alrededor de la forma, la materia
+            y la permanencia.
+          </p>
         </div>
+
+        {/* Filtro por tipo de prenda */}
+        {tipos.length > 0 && (
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mb-12" style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
+            <a
+              href="/productos"
+              className="py-3 text-[12px] uppercase tracking-[0.06em] transition-colors"
+              style={{
+                fontFamily: "var(--font-inter)",
+                fontWeight: !categoria ? 600 : 400,
+                color: !categoria ? "var(--ink)" : "var(--text-secondary)",
+              }}
+            >
+              Todo
+            </a>
+            {tipos.map((tipo) => {
+              const active = categoria === tipo
+              return (
+                <a
+                  key={tipo}
+                  href={`/productos?categoria=${encodeURIComponent(tipo)}`}
+                  className="py-3 text-[12px] uppercase tracking-[0.06em] transition-colors"
+                  style={{
+                    fontFamily: "var(--font-inter)",
+                    fontWeight: active ? 600 : 400,
+                    color: active ? "var(--ink)" : "var(--text-secondary)",
+                  }}
+                >
+                  {tipo}
+                </a>
+              )
+            })}
+          </div>
+        )}
 
         {/* Grid o empty state */}
         {products && products.length > 0 ? (
           <ProductGrid products={products as Product[]} />
         ) : (
-          <div className="flex flex-col items-center justify-center py-28 text-center gap-4">
-            <span style={{ fontSize: "3rem" }}>🖤</span>
+          <div className="flex flex-col items-center justify-center py-28 text-center gap-3">
             <p
-              className="text-xl italic"
-              style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)", opacity: 0.7 }}
+              className="text-xl"
+              style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
             >
               Nuevos diseños llegando pronto
             </p>
             <p
-              className="text-[10px] uppercase tracking-[0.2em]"
-              style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+              className="text-[12px]"
+              style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
             >
               Estamos preparando algo especial para ti
             </p>

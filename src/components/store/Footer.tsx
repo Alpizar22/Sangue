@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Mail, MessageCircle } from "lucide-react"
 
 function InstagramIcon() {
   return (
@@ -20,28 +21,28 @@ function TikTokIcon() {
 
 export default function Footer() {
   return (
-    <footer style={{ borderTop: "1px solid rgba(26,26,26,0.1)", background: "var(--paper)" }}>
+    <footer style={{ borderTop: "1px solid var(--border)", background: "var(--paper)" }}>
       <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 sm:grid-cols-3 gap-10">
 
         {/* Col 1: Marca */}
         <div>
           <p
-            className="text-2xl italic mb-1"
+            className="text-2xl mb-2"
             style={{ fontFamily: "var(--font-instrument)", color: "var(--ink)" }}
           >
             Theia
           </p>
           <p
-            className="mb-4"
-            style={{ fontFamily: "var(--font-caveat)", color: "var(--pink)", fontSize: "1rem" }}
+            className="mb-4 text-[13px]"
+            style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
           >
-            moda que habla por ti
+            Esenciales diseñados para permanecer.
           </p>
           <p
             className="text-[11px] leading-relaxed mb-5"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.45 }}
+            style={{ fontFamily: "var(--font-inter)", color: "var(--text-secondary)" }}
           >
-            Ropa con estilo y envíos a toda la República Mexicana. Pago seguro con MercadoPago.
+            Diseño esencial. Producción bajo demanda. Envíos en México.
           </p>
           <div className="flex items-center gap-3">
             <a
@@ -70,27 +71,28 @@ export default function Footer() {
         {/* Col 2: Ayuda */}
         <div>
           <p
-            className="text-[10px] uppercase tracking-[0.2em] mb-4"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+            className="text-[10px] uppercase tracking-[0.12em] mb-4"
+            style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--text-secondary)" }}
           >
             Ayuda
           </p>
           <div
-            className="space-y-2.5 text-[11px]"
-            style={{ fontFamily: "var(--font-space-mono)" }}
+            className="space-y-2.5 text-[13px]"
+            style={{ fontFamily: "var(--font-inter)" }}
           >
             {[
               { href: "/ayuda/seguimiento", label: "Seguimiento de pedido" },
               { href: "/ayuda/envios", label: "Política de envíos" },
               { href: "/ayuda/devoluciones", label: "Devoluciones y cambios" },
               { href: "/ayuda/preguntas-frecuentes", label: "Preguntas frecuentes" },
-              { href: "/coleccion", label: "Ver toda la colección" },
+              { href: "/la-casa", label: "La Casa" },
+              { href: "/filosofia", label: "Filosofía" },
             ].map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
-                className="block transition-opacity hover:opacity-100"
-                style={{ color: "var(--ink)", opacity: 0.45 }}
+                className="block transition-colors hover:text-[var(--ink)]"
+                style={{ color: "var(--text-secondary)" }}
               >
                 {label}
               </Link>
@@ -101,34 +103,34 @@ export default function Footer() {
         {/* Col 3: Contacto */}
         <div>
           <p
-            className="text-[10px] uppercase tracking-[0.2em] mb-4"
-            style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.35 }}
+            className="text-[10px] uppercase tracking-[0.12em] mb-4"
+            style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--text-secondary)" }}
           >
             Contacto
           </p>
           <div
-            className="space-y-3 text-[11px]"
-            style={{ fontFamily: "var(--font-space-mono)" }}
+            className="space-y-3 text-[13px]"
+            style={{ fontFamily: "var(--font-inter)" }}
           >
             <a
               href="mailto:nasusagency@gmail.com"
-              className="flex items-center gap-2 transition-opacity hover:opacity-100"
-              style={{ color: "var(--ink)", opacity: 0.45 }}
+              className="flex items-center gap-2 transition-colors hover:text-[var(--ink)]"
+              style={{ color: "var(--text-secondary)" }}
             >
-              <span>✉</span>
+              <Mail size={14} strokeWidth={1.5} />
               nasusagency@gmail.com
             </a>
             <a
               href="https://wa.me/5213312345678?text=Hola%2C+tengo+una+pregunta+sobre+mi+pedido+en+Theia"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 transition-opacity hover:opacity-100"
-              style={{ color: "var(--ink)", opacity: 0.45 }}
+              className="flex items-center gap-2 transition-colors hover:text-[var(--ink)]"
+              style={{ color: "var(--text-secondary)" }}
             >
-              <span>💬</span>
+              <MessageCircle size={14} strokeWidth={1.5} />
               WhatsApp
             </a>
-            <p style={{ color: "var(--ink)", opacity: 0.3 }}>
+            <p className="text-[12px]" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>
               Lun–Vie · 10:00–18:00 hrs
             </p>
           </div>
@@ -139,10 +141,10 @@ export default function Footer() {
       <div
         className="text-center py-3 text-[10px]"
         style={{
-          borderTop: "1px solid rgba(26,26,26,0.06)",
-          fontFamily: "var(--font-space-mono)",
-          color: "var(--ink)",
-          opacity: 0.25,
+          borderTop: "1px solid var(--border)",
+          fontFamily: "var(--font-inter)",
+          color: "var(--text-secondary)",
+          opacity: 0.7,
         }}
       >
         © {new Date().getFullYear()} Theia · Todos los derechos reservados
