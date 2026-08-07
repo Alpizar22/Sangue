@@ -21,6 +21,7 @@ export const COLOR_MAP: Record<string, string> = {
   // Greens
   "light green": "#90ee90",
   "dark green": "#006400", "army green": "#4b5320",
+  "moss": "#8a9a5b",
   "olive green": "#6b7c1e", "olive": "#808000",
   "forest green": "#228b22", "hunter green": "#355e3b",
   "mint green": "#98ff98", "mint": "#98ff98",
@@ -29,6 +30,7 @@ export const COLOR_MAP: Record<string, string> = {
   "turquoise": "#40e0d0", "aqua": "#00bcd4",
   // Blues
   "sky blue": "#87ceeb", "light blue": "#add8e6",
+  "ice blue": "#d6f1f5",
   "baby blue": "#89cff0", "powder blue": "#b0c4de",
   "royal blue": "#4169e1", "cobalt blue": "#0047ab",
   "navy blue": "#001f5b", "dark blue": "#00008b",
