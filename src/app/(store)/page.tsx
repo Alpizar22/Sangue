@@ -18,6 +18,8 @@ export default async function HomePage() {
     .from("products")
     .select("*")
     .eq("status", "active")
+    .order("featured", { ascending: false })
+    .order("sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false })
     .limit(FEATURED_LIMIT)
 

@@ -20,6 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .from("products")
     .select("title, description, images, display_name")
     .eq("id", slug)
+    .eq("status", "active")
     .single()
 
   if (!data) return { title: "Producto no encontrado" }
@@ -62,8 +63,10 @@ export default async function ProductPage({ params }: Props) {
     .select("*")
     .eq("status", "active")
     .neq("id", product.id)
+    .order("featured", { ascending: false })
+    .order("sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false })
-    .limit(8)
+    .limit(4)
 
   relatedQuery = product.subcategory
     ? relatedQuery.eq("subcategory", product.subcategory)
@@ -71,9 +74,7 @@ export default async function ProductPage({ params }: Props) {
 
   const { data: related } = await relatedQuery
 
-  const relatedProducts: Product[] = (related ?? [])
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 4)
+  const relatedProducts = (related ?? []) as Product[]
 
   return (
     <div style={{ background: "var(--bg)" }}>

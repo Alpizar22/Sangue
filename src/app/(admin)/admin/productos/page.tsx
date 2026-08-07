@@ -12,12 +12,13 @@ export default async function AdminProductsPage() {
   const { data: products, error: fetchError } = await supabase
     .from("products")
     .select("*")
+    .order("sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false })
 
   if (fetchError) console.error("[productos] fetch error:", fetchError)
-  if (products?.length) console.log("[productos] first row keys:", Object.keys(products[0]))
 
   const count = products?.length ?? 0
+  const activeCount = products?.filter((product) => product.status === "active").length ?? 0
   const pct = Math.round((count / MAX_PRODUCTS) * 100)
   const nearLimit = count >= 85
   const atLimit = count >= MAX_PRODUCTS
@@ -27,7 +28,7 @@ export default async function AdminProductsPage() {
       {/* Contador de productos */}
       <div className="mb-6 p-4 bg-white rounded-xl border space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-gray-700">{count} productos activos</span>
+          <span className="font-medium text-gray-700">{count} productos · {activeCount} activos</span>
           <span className={`font-mono text-xs font-semibold ${atLimit ? "text-red-600" : nearLimit ? "text-amber-600" : "text-gray-500"}`}>
             {count} / {MAX_PRODUCTS}
           </span>
@@ -68,15 +69,15 @@ export default async function AdminProductsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-xl border bg-white">
+        <table className="min-w-[980px] w-full text-sm">
           <thead>
             <tr className="text-left text-gray-500 border-b bg-gray-50 text-gray-700">
               <th className="px-4 py-3">Producto</th>
               <th className="px-4 py-3">Precio costo</th>
               <th className="px-4 py-3">Precio venta</th>
               <th className="px-4 py-3">Markup</th>
-              <th className="px-4 py-3">Sección</th>
+              <th className="px-4 py-3">Orden</th>
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -94,15 +95,16 @@ export default async function AdminProductsPage() {
                         className="w-10 h-10 object-cover rounded-lg flex-shrink-0"
                       />
                     )}
-                    <span className="font-medium line-clamp-2 max-w-xs">
+                    <span className="max-w-xs font-medium line-clamp-2">
                       {p.title || <span className="text-gray-400 italic">sin título</span>}
                     </span>
+                    {p.featured && <span title="Destacado" className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">DESTACADO</span>}
                   </div>
                 </td>
                 <td className="px-4 py-3 text-gray-900">${Number(p.cost_price).toLocaleString("es-MX")}</td>
                 <td className="px-4 py-3 font-semibold text-gray-900">${Number(p.sale_price).toLocaleString("es-MX")}</td>
                 <td className="px-4 py-3 text-green-600">{Number(p.markup_percentage).toFixed(0)}%</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{p.seccion ?? "—"}</td>
+                <td className="px-4 py-3 text-xs text-gray-500">{p.sort_order ?? "—"}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs ${
                     p.status === "active" ? "bg-green-100 text-green-700" :

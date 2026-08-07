@@ -1,4 +1,4 @@
-export type ProductStatus = "active" | "inactive" | "out_of_stock"
+export type ProductStatus = "draft" | "active" | "inactive" | "out_of_stock"
 export type OrderStatus =
   | "pending"
   | "paid"
@@ -43,6 +43,8 @@ export interface Product {
   printful_product_id?: number | null
   printful_variant_id?: number | null
   printful_variant_map?: Record<string, number> | null
+  featured?: boolean
+  sort_order?: number | null
 }
 
 export interface CartItem {

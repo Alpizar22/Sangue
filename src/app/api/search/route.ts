@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const supabase = adminSupabase()
   const { data, error } = await supabase
     .from("products")
-    .select("id, title, price, sale_price, images, seccion")
+    .select("id, title, sale_price, images, seccion")
     .ilike("title", `%${q}%`)
     .eq("status", "active")
     .limit(8)

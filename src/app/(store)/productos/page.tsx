@@ -28,6 +28,8 @@ export default async function ProductosPage({ searchParams }: { searchParams: Se
         .from("products")
         .select("*")
         .eq("status", "active")
+        .order("featured", { ascending: false })
+        .order("sort_order", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false })
 
       if (categoria) query = query.ilike("subcategory", `%${categoria}%`)
