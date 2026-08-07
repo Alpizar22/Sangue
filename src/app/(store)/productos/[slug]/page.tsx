@@ -5,7 +5,7 @@ import type { Product } from "@/types"
 import Link from "next/link"
 import ProductInteractive from "@/components/store/ProductInteractive"
 import ProductCard from "@/components/store/ProductCard"
-import { getDisplayName } from "@/lib/presentation"
+import { getDisplayImages, getDisplayName } from "@/lib/presentation"
 
 export const revalidate = 300
 
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient()
   const { data } = await supabase
     .from("products")
-    .select("title, description, images, display_name")
+    .select("title, description, images, editorial_images, display_name")
     .eq("id", slug)
     .eq("status", "active")
     .single()
@@ -26,6 +26,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!data) return { title: "Producto no encontrado" }
 
   const name = getDisplayName(data as Pick<Product, "display_name" | "title">)
+  const primaryImage = getDisplayImages(
+    data as Pick<Product, "editorial_images" | "images">
+  )[0]
 
   return {
     title: `${name} — Theia`,
@@ -37,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description:
         data.description?.slice(0, 155) ??
         `${name} — disponible en Theia con envío a todo México.`,
-      images: data.images?.[0] ? [{ url: data.images[0] }] : [],
+      images: primaryImage ? [{ url: primaryImage }] : [],
     },
   }
 }

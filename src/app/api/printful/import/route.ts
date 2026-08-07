@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { getPrintfulProduct, getPrintfulCatalogProduct } from "@/lib/printful"
 import { hasValidAdminSession } from "@/lib/adminAuth"
+import { mergeImageUrls } from "@/lib/presentation"
 
 const EXCHANGE_RATE = 17.5 // solo se aplica si Printful devuelve costos en USD — ver getCostInMxn()
 const DEFAULT_MARGIN = 2.75
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
     const colors = new Set<string>()
     const colorSizes: Record<string, string[]> = {}
     const printfulVariantMap: Record<string, number> = {}
-    const images = new Set<string>()
+    const productImages = new Set<string>()
 
     for (const sv of sync_variants) {
       const color = sv.color || "Único"
@@ -84,9 +85,12 @@ export async function POST(req: NextRequest) {
       colors.add(color)
       colorSizes[color] = colorSizes[color] ? [...new Set([...colorSizes[color], size])] : [size]
       printfulVariantMap[`${color}|${size}`] = sv.variant_id
-      if (sv.product.image) images.add(sv.product.image)
+      if (sv.product.image) productImages.add(sv.product.image)
     }
-    if (images.size === 0 && sync_product.thumbnail_url) images.add(sync_product.thumbnail_url)
+    const images = mergeImageUrls(
+      sync_product.thumbnail_url ? [sync_product.thumbnail_url] : [],
+      [...productImages],
+    )
 
     const sizes = [...new Set(Object.values(colorSizes).flat())]
 
@@ -95,7 +99,7 @@ export async function POST(req: NextRequest) {
       shein_url: `https://www.printful.com/dashboard/store/product/${sync_product.id}`,
       title: sync_product.name,
       description: catalog.product.title || null,
-      images: [...images],
+      images,
       original_price: salePrice,
       cost_price: costPrice,
       sale_price: salePrice,

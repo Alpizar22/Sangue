@@ -23,11 +23,12 @@ export function getSubtitle(product: Pick<Product, "subtitle" | "subcategory">):
   return product.subtitle?.trim() || product.subcategory?.trim() || null
 }
 
-// Imágenes a mostrar. Prioridad: imágenes editoriales propias (si existen
-// y no están vacías) → imágenes reales de Printful. Nunca se inventan.
+export function mergeImageUrls(...groups: Array<readonly string[] | null | undefined>): string[] {
+  return [...new Set(groups.flatMap((group) => group ?? []).map((url) => url.trim()).filter(Boolean))]
+}
+
+// Imágenes a mostrar. Prioridad: imágenes editoriales propias → imágenes
+// reales del producto/Printful. Se conservan ambas fuentes sin duplicados.
 export function getDisplayImages(product: Pick<Product, "editorial_images" | "images">): string[] {
-  if (product.editorial_images && product.editorial_images.length > 0) {
-    return product.editorial_images
-  }
-  return product.images ?? []
+  return mergeImageUrls(product.editorial_images, product.images)
 }
