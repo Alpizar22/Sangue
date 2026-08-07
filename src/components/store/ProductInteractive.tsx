@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { Product } from "@/types"
 import ProductGallery from "./ProductGallery"
 import AddToCartButton from "./AddToCartButton"
-import { getDisplayName, getSubtitle, getDisplayImages } from "@/lib/presentation"
+import { getColorImageIndex, getDisplayName, getProductGalleryImages, getSubtitle } from "@/lib/presentation"
 import { CONTACT_EMAIL, CONTACT_EMAIL_URL, WHATSAPP_DISPLAY, WHATSAPP_URL } from "@/lib/contact"
 import { Truck, ShieldCheck } from "lucide-react"
 
@@ -58,12 +58,10 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
 
 export default function ProductInteractive({ product }: Props) {
   const [activeIndex, setActiveIndex] = useState(0)
+  const galleryImages = getProductGalleryImages(product)
 
-  function handleColorChange(_color: string, colorIndex: number) {
-    const imageCount = getDisplayImages(product).length
-    if (imageCount > 0 && colorIndex >= 0) {
-      setActiveIndex(colorIndex < imageCount ? colorIndex : 0)
-    }
+  function handleColorChange(color: string) {
+    setActiveIndex(getColorImageIndex(product, color))
   }
 
   const desc = product.description ?? ""
@@ -76,7 +74,7 @@ export default function ProductInteractive({ product }: Props) {
 
       {/* ── LEFT: Gallery ─────────────────────────────────────── */}
       <ProductGallery
-        images={getDisplayImages(product)}
+        images={galleryImages}
         title={displayName}
         activeIndex={activeIndex}
         onActiveChange={setActiveIndex}

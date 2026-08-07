@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { getPrintfulProduct, getPrintfulCatalogProduct } from "@/lib/printful"
 import { hasValidAdminSession } from "@/lib/adminAuth"
 import { mergeImageUrls } from "@/lib/presentation"
+import { buildPrintfulColorImages } from "@/lib/productImages"
 
 const EXCHANGE_RATE = 17.5 // solo se aplica si Printful devuelve costos en USD — ver getCostInMxn()
 const DEFAULT_MARGIN = 2.75
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest) {
     )
 
     const sizes = [...new Set(Object.values(colorSizes).flat())]
+    const colorImages = buildPrintfulColorImages(sync_variants)
 
     const row = {
       shein_product_id: `printful_${sync_product.id}`,
@@ -100,6 +102,7 @@ export async function POST(req: NextRequest) {
       title: sync_product.name,
       description: catalog.product.title || null,
       images,
+      color_images: colorImages,
       original_price: salePrice,
       cost_price: costPrice,
       sale_price: salePrice,

@@ -39,6 +39,7 @@ export interface Product {
   chapter?: string | null
   story?: string | null
   editorial_images?: string[] | null
+  color_images?: Record<string, string> | null
   source?: string | null
   printful_product_id?: number | null
   printful_variant_id?: number | null

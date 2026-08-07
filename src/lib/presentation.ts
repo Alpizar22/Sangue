@@ -32,3 +32,24 @@ export function mergeImageUrls(...groups: Array<readonly string[] | null | undef
 export function getDisplayImages(product: Pick<Product, "editorial_images" | "images">): string[] {
   return mergeImageUrls(product.editorial_images, product.images)
 }
+
+export function getProductGalleryImages(
+  product: Pick<Product, "editorial_images" | "images" | "color_images">
+): string[] {
+  return mergeImageUrls(
+    product.editorial_images,
+    product.images,
+    Object.values(product.color_images ?? {}),
+  )
+}
+
+export function getColorImageIndex(
+  product: Pick<Product, "editorial_images" | "images" | "color_images">,
+  color: string,
+): number {
+  const colorImage = product.color_images?.[color]?.trim()
+  if (!colorImage) return 0
+
+  const index = getProductGalleryImages(product).indexOf(colorImage)
+  return index >= 0 ? index : 0
+}
