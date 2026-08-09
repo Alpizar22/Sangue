@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { Product } from "@/types"
 import ProductGallery from "./ProductGallery"
 import AddToCartButton from "./AddToCartButton"
-import { getColorImageIndex, getDisplayName, getProductGalleryImages, getSubtitle } from "@/lib/presentation"
+import { getColorForImageIndex, getColorImageIndex, getDisplayName, getProductGalleryImages, getSubtitle } from "@/lib/presentation"
 import { CONTACT_EMAIL, CONTACT_EMAIL_URL, WHATSAPP_DISPLAY, WHATSAPP_URL } from "@/lib/contact"
 import { Truck, ShieldCheck } from "lucide-react"
 
@@ -58,10 +58,18 @@ function Accordion({ title, children }: { title: string; children: React.ReactNo
 
 export default function ProductInteractive({ product }: Props) {
   const [activeIndex, setActiveIndex] = useState(0)
+  const [selectedColor, setSelectedColor] = useState("")
   const galleryImages = getProductGalleryImages(product)
 
   function handleColorChange(color: string) {
+    setSelectedColor(color)
     setActiveIndex(getColorImageIndex(product, color))
+  }
+
+  function handleImageChange(index: number) {
+    setActiveIndex(index)
+    const color = getColorForImageIndex(product, index)
+    if (color) setSelectedColor(color)
   }
 
   const desc = product.description ?? ""
@@ -77,7 +85,7 @@ export default function ProductInteractive({ product }: Props) {
         images={galleryImages}
         title={displayName}
         activeIndex={activeIndex}
-        onActiveChange={setActiveIndex}
+        onActiveChange={handleImageChange}
       />
 
       {/* ── RIGHT: Info + actions ─────────────────────────────── */}
@@ -122,7 +130,11 @@ export default function ProductInteractive({ product }: Props) {
         <div style={{ height: "1px", background: "var(--border)" }} />
 
         {/* Color → Talla → CTA */}
-        <AddToCartButton product={product} onColorChange={handleColorChange} />
+        <AddToCartButton
+          product={product}
+          selectedColor={selectedColor}
+          onColorChange={handleColorChange}
+        />
 
         <div style={{ height: "1px", background: "var(--border)" }} />
 

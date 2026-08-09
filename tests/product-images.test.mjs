@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {
   getColorImageIndex,
+  getColorForImageIndex,
   getDisplayImages,
   getProductGalleryImages,
   getPrimaryProductImage,
@@ -136,6 +137,38 @@ test("selecciona la imagen explícita del color y usa fallback si falta", () => 
 
   assert.equal(getColorImageIndex(product, "Moss"), 1)
   assert.equal(getColorImageIndex(product, "Ivory"), 0)
+})
+
+test("resuelve el color correspondiente al seleccionar una imagen de galería", () => {
+  const product = {
+    editorial_images: ["https://example.com/editorial.jpg"],
+    images: ["https://example.com/main.jpg"],
+    colors: ["Moss", "Blue"],
+    color_images: {
+      Moss: "https://example.com/moss.jpg",
+      Blue: "https://example.com/blue.jpg",
+    },
+  }
+
+  assert.equal(getColorForImageIndex(product, getColorImageIndex(product, "Blue")), "Blue")
+  assert.equal(getColorForImageIndex(product, 0), null)
+})
+
+test("relaciona variantes de la misma URL de Printful aunque cambien sus parámetros", () => {
+  const product = {
+    editorial_images: null,
+    images: [],
+    colors: ["Blue"],
+    color_images: { Blue: "https://files.cdn.printful.com/mockup/blue.png?width=300" },
+  }
+
+  assert.equal(
+    getColorForImageIndex(
+      { ...product, editorial_images: ["https://files.cdn.printful.com/mockup/blue.png?width=1000"] },
+      0,
+    ),
+    "Blue",
+  )
 })
 
 test("la galería mantiene editoriales primero y deduplica imágenes de color", () => {
