@@ -30,9 +30,9 @@ export default function EnviosPage() {
           {/* Resumen visual */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { num: "1–3",    unit: "días hábiles", label: "Procesamiento" },
-              { num: "10–17",  unit: "días hábiles", label: "Entrega estimada" },
+              { num: "7–9",    unit: "días hábiles", label: "Entrega estimada" },
               { num: "$155",   unit: "MXN",          label: "Costo de envío" },
+              { num: "Incluido", unit: "",            label: "Seguimiento" },
             ].map(({ num, unit, label }) => (
               <div
                 key={label}
@@ -76,12 +76,8 @@ export default function EnviosPage() {
               style={{ fontFamily: "var(--font-space-mono)", color: "var(--ink)", opacity: 0.7 }}
             >
               <p>
-                Todos los pedidos se procesan en <strong style={{ opacity: 1 }}>1 a 3 días hábiles</strong> a partir de
-                la confirmación de pago.
-              </p>
-              <p>
-                El tiempo de entrega estimado es de <strong style={{ opacity: 1 }}>10 a 17 días hábiles</strong> a
-                cualquier punto de la República Mexicana.
+                Todos los pedidos se producen y envían bajo demanda. El tiempo total estimado es de <strong style={{ opacity: 1 }}>7 a 9 días hábiles</strong> desde
+                la confirmación de pago a cualquier punto de la República Mexicana.
               </p>
               <p>
                 El costo de envío es de <strong style={{ opacity: 1 }}>$155 MXN por pedido</strong>, sin importar
