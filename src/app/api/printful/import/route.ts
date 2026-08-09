@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
     const colors = new Set<string>()
     const colorSizes: Record<string, string[]> = {}
     const printfulVariantMap: Record<string, number> = {}
+    const colorSizeStock: Record<string, number> = {}
     const productImages = new Set<string>()
 
     for (const sv of sync_variants) {
@@ -86,6 +87,8 @@ export async function POST(req: NextRequest) {
       colors.add(color)
       colorSizes[color] = colorSizes[color] ? [...new Set([...colorSizes[color], size])] : [size]
       printfulVariantMap[`${color}|${size}`] = sv.variant_id
+      const isAvailable = sv.synced && (!sv.availability_status || sv.availability_status === "active")
+      colorSizeStock[`${color}|${size}`] = isAvailable ? 99 : 0
       if (sv.product.image) productImages.add(sv.product.image)
     }
     const images = mergeImageUrls(
@@ -114,6 +117,7 @@ export async function POST(req: NextRequest) {
       sizes,
       colors: [...colors],
       color_sizes: colorSizes,
+      color_size_stock: colorSizeStock,
       status: "active" as const,
       source: "printful",
       stock: 99,

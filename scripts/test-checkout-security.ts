@@ -130,6 +130,17 @@ check("talla sin disponibilidad se rechaza", () => {
   if (parsed.ok) assert.equal(buildAuthoritativeCart(parsed.value.items, [{ ...products[0], size_stock: { S: 0 } }]).ok, false)
 })
 
+check("combinación color y talla sin disponibilidad se rechaza", () => {
+  const parsed = parseCheckoutBody(body([validItem()]))
+  assert.equal(parsed.ok, true)
+  if (parsed.ok) {
+    assert.equal(
+      buildAuthoritativeCart(parsed.value.items, [{ ...products[0], color_size_stock: { "White|S": 0, "White|M": 99 } }]).ok,
+      false,
+    )
+  }
+})
+
 check("sale_price cero se rechaza", () => {
   const parsed = parseCheckoutBody(body([validItem()]))
   assert.equal(parsed.ok, true)

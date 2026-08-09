@@ -51,6 +51,16 @@ test("ordena thumbnail_url antes de product.image", () => {
   )
 })
 
+test("deduplica el thumbnail principal de Printful aunque cambien sus parámetros", () => {
+  assert.deepEqual(
+    mergeImageUrls(
+      ["https://files.cdn.printful.com/mockup/main.png?width=1000"],
+      ["https://files.cdn.printful.com/mockup/main.png?width=300"],
+    ),
+    ["https://files.cdn.printful.com/mockup/main.png?width=1000"],
+  )
+})
+
 test("agrupa por color y prefiere preview comercial sobre product.image", () => {
   assert.deepEqual(
     buildPrintfulColorImages([

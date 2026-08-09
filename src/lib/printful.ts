@@ -99,6 +99,7 @@ export interface PrintfulSyncVariant {
   sync_product_id: number
   name: string
   synced: boolean
+  availability_status?: "active" | "discontinued" | "out_of_stock" | "temporary_out_of_stock"
   variant_id: number // catalog variant id; para órdenes sincronizadas se traduce a sync variant id
   retail_price: string
   currency: string

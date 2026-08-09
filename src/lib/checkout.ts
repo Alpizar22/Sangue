@@ -40,6 +40,7 @@ export interface AuthoritativeProduct {
   source?: string | null
   stock?: number | null
   size_stock?: Record<string, number> | null
+  color_size_stock?: Record<string, number> | null
   sizes: string[] | null
   colors: string[] | null
   color_sizes?: Record<string, string[]> | null
@@ -250,6 +251,11 @@ export function buildAuthoritativeCart(
       issues.push({ field: prefix, code: "invalid_variant", message: "La combinación seleccionada ya no está disponible." })
       return
     }
+    const combinationStock = product.color_size_stock?.[`${color}|${size}`]
+    if (combinationStock != null && Number(combinationStock) <= 0) {
+      issues.push({ field: prefix, code: "unavailable", message: "La combinación seleccionada ya no está disponible." })
+      return
+    }
     const unitPrice = Number(product.sale_price)
     const unitCost = Number(product.cost_price)
     if (!Number.isFinite(unitPrice) || unitPrice <= 0 || !Number.isFinite(unitCost) || unitCost < 0) {
@@ -282,14 +288,18 @@ export function buildAuthoritativeCart(
 
   const productQuantities = new Map<string, number>()
   const sizeQuantities = new Map<string, number>()
+  const combinationQuantities = new Map<string, number>()
   for (const item of groupedItems.values()) {
     productQuantities.set(item.product.id, (productQuantities.get(item.product.id) ?? 0) + item.quantity)
     const sizeKey = `${item.product.id}\u0000${item.size}`
     sizeQuantities.set(sizeKey, (sizeQuantities.get(sizeKey) ?? 0) + item.quantity)
+    const combinationKey = `${item.product.id}\u0000${item.color}\u0000${item.size}`
+    combinationQuantities.set(combinationKey, (combinationQuantities.get(combinationKey) ?? 0) + item.quantity)
   }
 
   const checkedProducts = new Set<string>()
   const checkedSizes = new Set<string>()
+  const checkedCombinations = new Set<string>()
   for (const item of groupedItems.values()) {
     const prefix = `items.${item.sourceIndex}`
     if (item.quantity > MAX_ITEM_QUANTITY) {
@@ -321,6 +331,20 @@ export function buildAuthoritativeCart(
           field: `${prefix}.size`,
           code: "unavailable",
           message: "La talla seleccionada ya no está disponible.",
+        })
+      }
+    }
+
+    const combinationKey = `${item.product.id}\u0000${item.color}\u0000${item.size}`
+    if (!checkedCombinations.has(combinationKey)) {
+      checkedCombinations.add(combinationKey)
+      const requestedForCombination = combinationQuantities.get(combinationKey) ?? 0
+      const combinationStock = item.product.color_size_stock?.[`${item.color}|${item.size}`]
+      if (combinationStock != null && Number(combinationStock) < requestedForCombination) {
+        issues.push({
+          field: `${prefix}.quantity`,
+          code: "unavailable",
+          message: "No hay disponibilidad suficiente para esa combinación de color y talla.",
         })
       }
     }
