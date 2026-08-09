@@ -24,7 +24,32 @@ export function getSubtitle(product: Pick<Product, "subtitle" | "subcategory">):
 }
 
 export function mergeImageUrls(...groups: Array<readonly string[] | null | undefined>): string[] {
-  return [...new Set(groups.flatMap((group) => group ?? []).map((url) => url.trim()).filter(Boolean))]
+  const images: string[] = []
+  const seen = new Set<string>()
+
+  for (const rawUrl of groups.flatMap((group) => group ?? [])) {
+    const url = rawUrl.trim()
+    if (!url) continue
+
+    let identity = url
+    try {
+      const parsed = new URL(url)
+      if (parsed.hostname.endsWith("printful.com")) {
+        parsed.search = ""
+        parsed.hash = ""
+        identity = parsed.toString()
+      }
+    } catch {
+      // Mantener URLs relativas o no estándar con deduplicación exacta.
+    }
+
+    if (!seen.has(identity)) {
+      seen.add(identity)
+      images.push(url)
+    }
+  }
+
+  return images
 }
 
 // Imágenes a mostrar. Prioridad: imágenes editoriales propias → imágenes

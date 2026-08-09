@@ -31,6 +31,7 @@ export interface Product {
   subcategory?: string | null
   seccion?: string | null
   size_stock?: Record<string, number> | null
+  color_size_stock?: Record<string, number> | null
   color_sizes?: Record<string, string[]> | null
   // Capa de curaduría editorial — opcional, nunca la toca el sync de Printful.
   // Ver src/lib/presentation.ts para los fallbacks cuando no está seteada.

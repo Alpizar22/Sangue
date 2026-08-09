@@ -6,10 +6,19 @@ import { colorToCss, isLightColor } from "@/lib/colors"
 import type { Product } from "@/types"
 
 function isColorOutOfStock(color: string, product: Product): boolean {
-  if (!product.size_stock || !product.color_sizes) return false
+  if (!product.color_sizes) return false
   const sizes = product.color_sizes[color]
   if (!sizes?.length) return false
-  return sizes.every((s) => (product.size_stock?.[s] ?? 1) === 0)
+  if (product.color_size_stock) {
+    return sizes.every((size) => (product.color_size_stock?.[`${color}|${size}`] ?? 0) === 0)
+  }
+  if (!product.size_stock) return false
+  return sizes.every((size) => (product.size_stock?.[size] ?? 1) === 0)
+}
+
+function getVariantStock(product: Product, color: string, size: string): number | undefined {
+  if (product.color_size_stock && color) return product.color_size_stock[`${color}|${size}`] ?? 0
+  return product.size_stock?.[size]
 }
 
 function isColorVisible(color: string, product: Product): boolean {
@@ -55,8 +64,8 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
   const noPurchasableColor = allColors.length > 0 && colors.length === 0
   const noPurchasableSize =
     hasSizes &&
-    product.size_stock != null &&
-    availableSizes.every((s) => (product.size_stock?.[s] ?? 0) === 0)
+    (product.size_stock != null || (product.color_size_stock != null && !!selectedColor)) &&
+    availableSizes.every((size) => (getVariantStock(product, selectedColor, size) ?? 0) === 0)
   const soldOut = product.status === "out_of_stock" || noPurchasableColor || noPurchasableSize
 
   function handleColorSelect(color: string) {
@@ -161,8 +170,9 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
           <div className="flex flex-wrap gap-2">
             {availableSizes.map((size) => {
               const selected = selectedSize === size
-              const stockCount = product.size_stock?.[size]
-              const outOfStock = product.size_stock != null && (stockCount ?? 0) === 0
+              const stockCount = getVariantStock(product, selectedColor, size)
+              const hasVariantStock = product.size_stock != null || (product.color_size_stock != null && !!selectedColor)
+              const outOfStock = hasVariantStock && (stockCount ?? 0) === 0
               return (
                 <button
                   key={size}
