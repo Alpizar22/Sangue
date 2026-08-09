@@ -135,7 +135,7 @@ export default function ProductInteractive({ product }: Props) {
                 className="text-[12px]"
                 style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--ink)" }}
               >
-                Envío estándar · 10–17 días hábiles
+                Envío estándar · 7–9 días hábiles
               </p>
               <p
                 className="text-[12px]"

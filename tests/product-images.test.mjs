@@ -142,11 +142,11 @@ test("selecciona la imagen explícita del color y usa fallback si falta", () => 
     color_images: { Moss: "https://example.com/moss.jpg" },
   }
 
-  assert.equal(getColorImageIndex(product, "Moss"), 2)
+  assert.equal(getColorImageIndex(product, "Moss"), 1)
   assert.equal(getColorImageIndex(product, "Ivory"), 0)
 })
 
-test("la galería mantiene editoriales primero y deduplica imágenes de color", () => {
+test("la galería prioriza una imagen por color y omite miniaturas Printful repetidas", () => {
   assert.deepEqual(
     getProductGalleryImages({
       editorial_images: ["https://example.com/editorial.jpg"],

@@ -36,10 +36,16 @@ export function getDisplayImages(product: Pick<Product, "editorial_images" | "im
 export function getProductGalleryImages(
   product: Pick<Product, "editorial_images" | "images" | "color_images">
 ): string[] {
+  const colorImages = mergeImageUrls(Object.values(product.color_images ?? {}))
+
+  // Printful entrega una imagen por variante además de una miniatura general.
+  // Meter ambas fuentes aquí hacía que la primera imagen se repitiera (o que
+  // apareciera otro color antes del color elegido). Cuando existe un mapeo por
+  // color, esa es la galería comercial canónica: una vista por color.
   return mergeImageUrls(
     product.editorial_images,
-    product.images,
-    Object.values(product.color_images ?? {}),
+    colorImages.length ? [] : product.images,
+    colorImages,
   )
 }
 
