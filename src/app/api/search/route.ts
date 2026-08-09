@@ -12,13 +12,19 @@ export async function GET(req: NextRequest) {
   if (q.length < 2) return NextResponse.json([])
 
   const supabase = adminSupabase()
-  const { data, error } = await supabase
-    .from("products")
-    .select("id, title, sale_price, images, seccion")
-    .ilike("title", `%${q}%`)
-    .eq("status", "active")
-    .limit(8)
+  const columns = "id, title, display_name, sale_price, images, editorial_images, color_images, colors, seccion"
+  const [commercialResult, technicalResult] = await Promise.all([
+    supabase.from("products").select(columns).ilike("display_name", `%${q}%`).eq("status", "active").limit(8),
+    supabase.from("products").select(columns).ilike("title", `%${q}%`).eq("status", "active").limit(8),
+  ])
 
-  if (error) return NextResponse.json([], { status: 500 })
-  return NextResponse.json(data ?? [])
+  if (commercialResult.error || technicalResult.error) {
+    return NextResponse.json([], { status: 500 })
+  }
+
+  const products = new Map(
+    [...(commercialResult.data ?? []), ...(technicalResult.data ?? [])]
+      .map((product) => [product.id, product] as const)
+  )
+  return NextResponse.json([...products.values()].slice(0, 8))
 }

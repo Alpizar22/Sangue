@@ -1,20 +1,9 @@
 import type { Product } from "@/types"
 
-// Limpia un nombre crudo de proveedor (ej. "men's heavyweight long sleeve
-// t-shirt") a algo presentable sin inventar ni recortar información —
-// solo formatea lo que ya vino de la API.
-function titleCaseFallback(raw: string): string {
-  return raw
-    .trim()
-    .split(/\s+/)
-    .map((word) => (word.length > 2 ? word.charAt(0).toUpperCase() + word.slice(1) : word))
-    .join(" ")
-}
-
 // Nombre público de venta. Prioridad: nombre comercial curado a mano →
-// fallback formateado del título real de Printful.
+// título interno real, sin reescribirlo ni inferir un nombre comercial.
 export function getDisplayName(product: Pick<Product, "display_name" | "title">): string {
-  return product.display_name?.trim() || titleCaseFallback(product.title)
+  return product.display_name?.trim() || product.title.trim()
 }
 
 // Descriptor corto bajo el nombre. Prioridad: subtitle curado → tipo de
@@ -28,6 +17,7 @@ export function mergeImageUrls(...groups: Array<readonly string[] | null | undef
   const seen = new Set<string>()
 
   for (const rawUrl of groups.flatMap((group) => group ?? [])) {
+    if (typeof rawUrl !== "string") continue
     const url = rawUrl.trim()
     if (!url) continue
 
@@ -52,24 +42,47 @@ export function mergeImageUrls(...groups: Array<readonly string[] | null | undef
   return images
 }
 
-// Imágenes a mostrar. Prioridad: imágenes editoriales propias → imágenes
-// reales del producto/Printful. Se conservan ambas fuentes sin duplicados.
-export function getDisplayImages(product: Pick<Product, "editorial_images" | "images">): string[] {
-  return mergeImageUrls(product.editorial_images, product.images)
+type ProductImages = {
+  editorial_images?: readonly string[] | null
+  images?: readonly string[] | null
+  color_images?: Readonly<Record<string, string>> | null
+  colors?: readonly string[] | null
 }
 
-export function getProductGalleryImages(
-  product: Pick<Product, "editorial_images" | "images" | "color_images">
-): string[] {
+function getOrderedColorImages(product: Pick<ProductImages, "color_images" | "colors">): string[] {
+  const colorImages = product.color_images ?? {}
+  const ordered = (product.colors ?? []).map((color) => colorImages[color])
+  return mergeImageUrls(ordered, Object.values(colorImages))
+}
+
+export function getPrimaryProductImage(product: ProductImages): string | undefined {
   return mergeImageUrls(
+    product.editorial_images?.slice(0, 1),
+    getOrderedColorImages(product).slice(0, 1),
+    product.images?.slice(0, 1),
+  )[0]
+}
+
+// Todas las superficies públicas parten de la misma portada: editorial →
+// mockup del primer color disponible → imagen general de proveedor.
+export function getDisplayImages(product: ProductImages): string[] {
+  const primary = getPrimaryProductImage(product)
+  return mergeImageUrls(
+    primary ? [primary] : [],
     product.editorial_images,
+    getOrderedColorImages(product),
     product.images,
-    Object.values(product.color_images ?? {}),
   )
 }
 
+export function getProductGalleryImages(
+  product: ProductImages
+): string[] {
+  return getDisplayImages(product)
+}
+
 export function getColorImageIndex(
-  product: Pick<Product, "editorial_images" | "images" | "color_images">,
+  product: ProductImages,
   color: string,
 ): number {
   const colorImage = product.color_images?.[color]?.trim()
