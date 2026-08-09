@@ -3,13 +3,18 @@
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { X } from "lucide-react"
+import { getDisplayName, getPrimaryProductImage } from "@/lib/presentation"
 
 interface SearchResult {
   id: string
   title: string
+  display_name?: string | null
   price?: number
   sale_price?: number
   images: string[]
+  editorial_images?: string[] | null
+  color_images?: Record<string, string> | null
+  colors?: string[] | null
   seccion?: string
 }
 
@@ -50,6 +55,8 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
     }
   }, [])
 
+  // La búsqueda sincroniza este componente con un endpoint externo.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { search(debouncedQuery) }, [debouncedQuery, search])
 
   function handleResultClick(item: SearchResult) {
@@ -94,16 +101,18 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
         {/* Results */}
         {results.length > 0 && (
           <ul className="max-h-80 overflow-y-auto divide-y divide-black/5">
-            {results.map((item) => (
-              <li key={item.id}>
+            {results.map((item) => {
+              const name = getDisplayName(item)
+              const primaryImage = getPrimaryProductImage(item)
+              return <li key={item.id}>
                 <button
                   onClick={() => handleResultClick(item)}
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-black/5 transition-colors text-left"
                 >
-                  {item.images?.[0] ? (
+                  {primaryImage ? (
                     <img
-                      src={item.images[0]}
-                      alt={item.title}
+                      src={primaryImage}
+                      alt={name}
                       loading="lazy"
                       className="object-cover flex-shrink-0"
                       style={{ width: 44, height: 44 }}
@@ -112,14 +121,14 @@ export default function SearchModal({ onClose }: { onClose: () => void }) {
                     <div className="w-11 h-11 flex-shrink-0" style={{ background: "var(--border)" }} />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: "var(--ink)" }}>{item.title}</p>
+                    <p className="text-sm font-medium truncate" style={{ color: "var(--ink)" }}>{name}</p>
                     <p className="text-xs mt-0.5 opacity-50" style={{ fontFamily: "var(--font-space-mono)" }}>
                       ${displayPrice(item).toLocaleString("es-MX")} MXN
                     </p>
                   </div>
                 </button>
               </li>
-            ))}
+            })}
           </ul>
         )}
 

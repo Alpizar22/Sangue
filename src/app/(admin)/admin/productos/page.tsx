@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import type { Product } from "@/types"
 import DeleteProductButton from "@/components/admin/DeleteProductButton"
+import { getDisplayName } from "@/lib/presentation"
 
 export const metadata = { title: "Productos" }
 
@@ -95,9 +96,12 @@ export default async function AdminProductsPage() {
                         className="w-10 h-10 object-cover rounded-lg flex-shrink-0"
                       />
                     )}
-                    <span className="max-w-xs font-medium line-clamp-2">
-                      {p.title || <span className="text-gray-400 italic">sin título</span>}
-                    </span>
+                    <div className="max-w-xs">
+                      <span className="block font-medium line-clamp-2">{getDisplayName(p)}</span>
+                      <span className="mt-0.5 block text-xs text-gray-500 line-clamp-2">
+                        Título técnico: {p.title}
+                      </span>
+                    </div>
                     {p.featured && <span title="Destacado" className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">DESTACADO</span>}
                   </div>
                 </td>

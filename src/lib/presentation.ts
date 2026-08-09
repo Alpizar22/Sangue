@@ -1,20 +1,9 @@
 import type { Product } from "@/types"
 
-// Limpia un nombre crudo de proveedor (ej. "men's heavyweight long sleeve
-// t-shirt") a algo presentable sin inventar ni recortar información —
-// solo formatea lo que ya vino de la API.
-function titleCaseFallback(raw: string): string {
-  return raw
-    .trim()
-    .split(/\s+/)
-    .map((word) => (word.length > 2 ? word.charAt(0).toUpperCase() + word.slice(1) : word))
-    .join(" ")
-}
-
 // Nombre público de venta. Prioridad: nombre comercial curado a mano →
-// fallback formateado del título real de Printful.
+// título interno real, sin reescribirlo ni inferir un nombre comercial.
 export function getDisplayName(product: Pick<Product, "display_name" | "title">): string {
-  return product.display_name?.trim() || titleCaseFallback(product.title)
+  return product.display_name?.trim() || product.title.trim()
 }
 
 // Descriptor corto bajo el nombre. Prioridad: subtitle curado → tipo de
@@ -28,20 +17,11 @@ export function mergeImageUrls(...groups: Array<readonly string[] | null | undef
   const seen = new Set<string>()
 
   for (const rawUrl of groups.flatMap((group) => group ?? [])) {
+    if (typeof rawUrl !== "string") continue
     const url = rawUrl.trim()
     if (!url) continue
 
-    let identity = url
-    try {
-      const parsed = new URL(url)
-      if (parsed.hostname.endsWith("printful.com")) {
-        parsed.search = ""
-        parsed.hash = ""
-        identity = parsed.toString()
-      }
-    } catch {
-      // Mantener URLs relativas o no estándar con deduplicación exacta.
-    }
+    const identity = getImageIdentity(url)
 
     if (!seen.has(identity)) {
       seen.add(identity)
@@ -52,21 +32,62 @@ export function mergeImageUrls(...groups: Array<readonly string[] | null | undef
   return images
 }
 
-// Imágenes a mostrar. Prioridad: imágenes editoriales propias → imágenes
-// reales del producto/Printful. Se conservan ambas fuentes sin duplicados.
-export function getDisplayImages(product: Pick<Product, "editorial_images" | "images">): string[] {
-  return mergeImageUrls(product.editorial_images, product.images)
+function getImageIdentity(url: string): string {
+  const trimmed = url.trim()
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.hostname.endsWith("printful.com")) {
+      parsed.search = ""
+      parsed.hash = ""
+      return parsed.toString()
+    }
+  } catch {
+    // Mantener URLs relativas o no estándar con comparación exacta.
+  }
+  return trimmed
+}
+
+type ProductImages = {
+  editorial_images?: readonly string[] | null
+  images?: readonly string[] | null
+  color_images?: Readonly<Record<string, string>> | null
+  colors?: readonly string[] | null
+}
+
+function getOrderedColorImages(product: Pick<ProductImages, "color_images" | "colors">): string[] {
+  const colorImages = product.color_images ?? {}
+  const ordered = (product.colors ?? []).map((color) => colorImages[color])
+  return mergeImageUrls(ordered, Object.values(colorImages))
+}
+
+export function getPrimaryProductImage(product: ProductImages): string | undefined {
+  return mergeImageUrls(
+    product.editorial_images?.slice(0, 1),
+    getOrderedColorImages(product).slice(0, 1),
+    product.images?.slice(0, 1),
+  )[0]
+}
+
+// Todas las superficies públicas parten de la misma portada: editorial →
+// mockup del primer color disponible → imagen general de proveedor.
+export function getDisplayImages(product: ProductImages): string[] {
+  const primary = getPrimaryProductImage(product)
+  return mergeImageUrls(
+    primary ? [primary] : [],
+    product.editorial_images,
+    getOrderedColorImages(product),
+    product.images,
+  )
 }
 
 export function getProductGalleryImages(
-  product: Pick<Product, "editorial_images" | "images" | "color_images">
+  product: ProductImages
 ): string[] {
-  const colorImages = mergeImageUrls(Object.values(product.color_images ?? {}))
+  const colorImages = getOrderedColorImages(product)
 
   // Printful entrega una imagen por variante además de una miniatura general.
-  // Meter ambas fuentes aquí hacía que la primera imagen se repitiera (o que
-  // apareciera otro color antes del color elegido). Cuando existe un mapeo por
-  // color, esa es la galería comercial canónica: una vista por color.
+  // Cuando existen mockups por color, son la galería comercial canónica y se
+  // omiten las miniaturas generales repetidas, conservando primero editoriales.
   return mergeImageUrls(
     product.editorial_images,
     colorImages.length ? [] : product.images,
@@ -75,12 +96,28 @@ export function getProductGalleryImages(
 }
 
 export function getColorImageIndex(
-  product: Pick<Product, "editorial_images" | "images" | "color_images">,
+  product: ProductImages,
   color: string,
 ): number {
   const colorImage = product.color_images?.[color]?.trim()
   if (!colorImage) return 0
 
-  const index = getProductGalleryImages(product).indexOf(colorImage)
+  const identity = getImageIdentity(colorImage)
+  const index = getProductGalleryImages(product).findIndex(
+    (image) => getImageIdentity(image) === identity
+  )
   return index >= 0 ? index : 0
+}
+
+export function getColorForImageIndex(product: ProductImages, imageIndex: number): string | null {
+  const image = getProductGalleryImages(product)[imageIndex]
+  if (!image) return null
+
+  const colorImages = product.color_images ?? {}
+  const colors = [...new Set([...(product.colors ?? []), ...Object.keys(colorImages)])]
+  const identity = getImageIdentity(image)
+  return colors.find((color) => {
+    const colorImage = colorImages[color]
+    return colorImage && getImageIdentity(colorImage) === identity
+  }) ?? null
 }

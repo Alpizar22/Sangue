@@ -2,8 +2,11 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import {
   getColorImageIndex,
+  getColorForImageIndex,
   getDisplayImages,
   getProductGalleryImages,
+  getPrimaryProductImage,
+  getDisplayName,
   mergeImageUrls,
 } from "../src/lib/presentation.ts"
 import { buildPrintfulColorImages } from "../src/lib/productImages.ts"
@@ -39,6 +42,46 @@ test("usa las imágenes del producto como fallback", () => {
     ["https://example.com/product.jpg"],
   )
   assert.deepEqual(getDisplayImages({ editorial_images: null, images: [] }), [])
+})
+
+test("usa una sola prioridad de portada: editorial, color y proveedor", () => {
+  const product = {
+    editorial_images: ["https://example.com/editorial.jpg"],
+    color_images: { Black: "https://example.com/black.jpg" },
+    colors: ["Black"],
+    images: ["https://example.com/provider.jpg"],
+  }
+
+  assert.equal(getPrimaryProductImage(product), "https://example.com/editorial.jpg")
+  assert.equal(getPrimaryProductImage({ ...product, editorial_images: null }), "https://example.com/black.jpg")
+  assert.equal(
+    getPrimaryProductImage({ ...product, editorial_images: null, color_images: null }),
+    "https://example.com/provider.jpg",
+  )
+  assert.equal(
+    getPrimaryProductImage({ editorial_images: null, color_images: null, colors: [], images: [] }),
+    undefined,
+  )
+})
+
+test("respeta el orden de colores al elegir el mockup principal", () => {
+  assert.equal(
+    getPrimaryProductImage({
+      editorial_images: null,
+      images: ["https://example.com/provider.jpg"],
+      colors: ["White", "Black"],
+      color_images: {
+        Black: "https://example.com/black.jpg",
+        White: "https://example.com/white.jpg",
+      },
+    }),
+    "https://example.com/white.jpg",
+  )
+})
+
+test("usa display_name limpio y conserva title como fallback exacto", () => {
+  assert.equal(getDisplayName({ display_name: "  Essential Relaxed Tee  ", title: "Technical 6110GD" }), "Essential Relaxed Tee")
+  assert.equal(getDisplayName({ display_name: null, title: "  Essential Garment Tee.  " }), "Essential Garment Tee.")
 })
 
 test("ordena thumbnail_url antes de product.image", () => {
@@ -154,6 +197,38 @@ test("selecciona la imagen explícita del color y usa fallback si falta", () => 
 
   assert.equal(getColorImageIndex(product, "Moss"), 1)
   assert.equal(getColorImageIndex(product, "Ivory"), 0)
+})
+
+test("resuelve el color correspondiente al seleccionar una imagen de galería", () => {
+  const product = {
+    editorial_images: ["https://example.com/editorial.jpg"],
+    images: ["https://example.com/main.jpg"],
+    colors: ["Moss", "Blue"],
+    color_images: {
+      Moss: "https://example.com/moss.jpg",
+      Blue: "https://example.com/blue.jpg",
+    },
+  }
+
+  assert.equal(getColorForImageIndex(product, getColorImageIndex(product, "Blue")), "Blue")
+  assert.equal(getColorForImageIndex(product, 0), null)
+})
+
+test("relaciona variantes de la misma URL de Printful aunque cambien sus parámetros", () => {
+  const product = {
+    editorial_images: null,
+    images: [],
+    colors: ["Blue"],
+    color_images: { Blue: "https://files.cdn.printful.com/mockup/blue.png?width=300" },
+  }
+
+  assert.equal(
+    getColorForImageIndex(
+      { ...product, editorial_images: ["https://files.cdn.printful.com/mockup/blue.png?width=1000"] },
+      0,
+    ),
+    "Blue",
+  )
 })
 
 test("la galería prioriza una imagen por color y omite miniaturas Printful repetidas", () => {

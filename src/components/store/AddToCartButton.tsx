@@ -30,18 +30,17 @@ function isColorVisible(color: string, product: Product): boolean {
 
 interface Props {
   product: Product
-  onColorChange?: (color: string, colorIndex: number) => void
+  selectedColor: string
+  onColorChange: (color: string, colorIndex: number) => void
 }
 
-export default function AddToCartButton({ product, onColorChange }: Props) {
+export default function AddToCartButton({ product, selectedColor, onColorChange }: Props) {
   const allColors = product.colors ?? []
   const allSizes = product.sizes ?? []
 
   const colors = allColors.filter((c) => isColorVisible(c, product))
 
-  const [selectedColor, setSelectedColor] = useState<string>(
-    colors.length === 1 ? colors[0] : ""
-  )
+  const effectiveSelectedColor = selectedColor || (colors.length === 1 ? colors[0] : "")
   const [selectedSize, setSelectedSize] = useState<string>(() => {
     const initColor = colors.length === 1 ? colors[0] : ""
     const initSizes = product.color_sizes?.[initColor] ?? allSizes
@@ -51,27 +50,27 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
   const [sizeError, setSizeError] = useState(false)
   const addItem = useCartStore((s) => s.addItem)
 
-  const availableSizes: string[] = selectedColor && product.color_sizes?.[selectedColor]
-    ? product.color_sizes[selectedColor]
+  const availableSizes: string[] = effectiveSelectedColor && product.color_sizes?.[effectiveSelectedColor]
+    ? product.color_sizes[effectiveSelectedColor]
     : allSizes
+  const effectiveSelectedSize = availableSizes.includes(selectedSize) ? selectedSize : ""
 
   const hasColors = colors.length > 0
   const hasSizes = availableSizes.length > 0
-  const needsSizeSelection = hasSizes && !selectedSize
+  const needsSizeSelection = hasSizes && !effectiveSelectedSize
 
   // Agotado: el producto está marcado sin stock, o ninguna combinación
   // color/talla real tiene inventario disponible.
   const noPurchasableColor = allColors.length > 0 && colors.length === 0
   const noPurchasableSize =
     hasSizes &&
-    (product.size_stock != null || (product.color_size_stock != null && !!selectedColor)) &&
-    availableSizes.every((size) => (getVariantStock(product, selectedColor, size) ?? 0) === 0)
+    (product.size_stock != null || (product.color_size_stock != null && !!effectiveSelectedColor)) &&
+    availableSizes.every((size) => (getVariantStock(product, effectiveSelectedColor, size) ?? 0) === 0)
   const soldOut = product.status === "out_of_stock" || noPurchasableColor || noPurchasableSize
 
   function handleColorSelect(color: string) {
-    setSelectedColor(color)
     const idx = allColors.indexOf(color)
-    if (idx !== -1) onColorChange?.(color, idx)
+    if (idx !== -1) onColorChange(color, idx)
     const newSizes = product.color_sizes?.[color] ?? allSizes
     if (selectedSize && !newSizes.includes(selectedSize)) {
       setSelectedSize(newSizes.length === 1 ? newSizes[0] : "")
@@ -84,7 +83,7 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
       setTimeout(() => setSizeError(false), 2500)
       return
     }
-    addItem(product, selectedSize, selectedColor)
+    addItem(product, effectiveSelectedSize, effectiveSelectedColor)
     setAdded(true)
     setTimeout(() => setAdded(false), 2200)
   }
@@ -102,19 +101,19 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
             >
               Color
             </p>
-            {selectedColor && (
+            {effectiveSelectedColor && (
               <span
                 className="text-[11px]"
                 style={{ fontFamily: "var(--font-inter)", color: "var(--accent-2)" }}
               >
-                {selectedColor}
+                {effectiveSelectedColor}
               </span>
             )}
           </div>
           <div className="flex flex-wrap gap-3">
             {colors.map((color) => {
               const css = colorToCss(color)!
-              const selected = selectedColor === color
+              const selected = effectiveSelectedColor === color
               const isLight = isLightColor(css)
               return (
                 <button
@@ -154,24 +153,24 @@ export default function AddToCartButton({ product, onColorChange }: Props) {
               style={{ fontFamily: "var(--font-inter)", fontWeight: 500, color: "var(--text-secondary)" }}
             >
               Talla
-              {hasColors && !selectedColor && (
+              {hasColors && !effectiveSelectedColor && (
                 <span style={{ fontWeight: 400 }}> — selecciona un color primero</span>
               )}
             </p>
-            {selectedSize && (
+            {effectiveSelectedSize && (
               <span
                 className="text-[11px]"
                 style={{ fontFamily: "var(--font-inter)", color: "var(--accent-2)" }}
               >
-                {selectedSize}
+                {effectiveSelectedSize}
               </span>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
             {availableSizes.map((size) => {
-              const selected = selectedSize === size
-              const stockCount = getVariantStock(product, selectedColor, size)
-              const hasVariantStock = product.size_stock != null || (product.color_size_stock != null && !!selectedColor)
+              const selected = effectiveSelectedSize === size
+              const stockCount = getVariantStock(product, effectiveSelectedColor, size)
+              const hasVariantStock = product.size_stock != null || (product.color_size_stock != null && !!effectiveSelectedColor)
               const outOfStock = hasVariantStock && (stockCount ?? 0) === 0
               return (
                 <button

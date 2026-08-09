@@ -5,6 +5,7 @@ import type { Product } from "@/types"
 import ProductGrid from "@/components/store/ProductGrid"
 import { Eyebrow } from "@/components/store/Editorial"
 import styles from "@/components/store/Catalog.module.css"
+import { getDisplayName } from "@/lib/presentation"
 
 export const revalidate = 60
 
@@ -33,9 +34,6 @@ export default async function ProductosPage({ searchParams }: { searchParams: Se
         .order("created_at", { ascending: false })
 
       if (categoria) query = query.ilike("subcategory", `%${categoria}%`)
-      // La búsqueda permanece deliberadamente limitada al título fuente.
-      if (search) query = query.ilike("title", `%${search}%`)
-
       return query
     })(),
   ])
@@ -46,9 +44,16 @@ export default async function ProductosPage({ searchParams }: { searchParams: Se
     .map(String)
     .sort((a, b) => a.localeCompare(b, "es"))
 
+  const products = ((productsResult.data ?? []) as Product[]).filter((product) => {
+    if (!search) return true
+    const needle = search.toLocaleLowerCase("es")
+    return getDisplayName(product).toLocaleLowerCase("es").includes(needle)
+      || product.title.toLocaleLowerCase("es").includes(needle)
+  })
+
   return (
     <CatalogContent
-      products={(productsResult.data ?? []) as Product[]}
+      products={products}
       types={types}
       categoria={categoria}
       search={search}
@@ -114,7 +119,7 @@ export function CatalogContent({
             index="00"
             title="No encontramos piezas con estos criterios."
             description={search
-              ? `La búsqueda actual revisa el nombre fuente del producto y no encontró coincidencias para “${search}”.`
+              ? `No encontramos nombres comerciales ni títulos internos que coincidan con “${search}”.`
               : `No hay piezas disponibles actualmente en ${categoria}.`}
             actionHref="/productos"
             actionLabel="Ver toda la colección"
