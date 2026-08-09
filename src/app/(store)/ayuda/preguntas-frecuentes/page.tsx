@@ -12,8 +12,8 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     q: "¿Cuánto tarda en llegar mi pedido?",
     a: (
       <>
-        El tiempo total estimado es de <strong>11 a 20 días hábiles</strong>: 1–3 días de
-        producción (cada prenda se imprime bajo demanda) + 10–17 días hábiles de envío
+        El tiempo total estimado es de <strong>7 a 9 días hábiles</strong> a toda la República
+        Mexicana. Cada prenda se imprime bajo demanda e incluye seguimiento.
         estándar a México.
       </>
     ),

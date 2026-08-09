@@ -83,7 +83,16 @@ export function getDisplayImages(product: ProductImages): string[] {
 export function getProductGalleryImages(
   product: ProductImages
 ): string[] {
-  return getDisplayImages(product)
+  const colorImages = getOrderedColorImages(product)
+
+  // Printful entrega una imagen por variante además de una miniatura general.
+  // Cuando existen mockups por color, son la galería comercial canónica y se
+  // omiten las miniaturas generales repetidas, conservando primero editoriales.
+  return mergeImageUrls(
+    product.editorial_images,
+    colorImages.length ? [] : product.images,
+    colorImages,
+  )
 }
 
 export function getColorImageIndex(

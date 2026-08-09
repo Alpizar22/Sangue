@@ -11,6 +11,12 @@ export const COLOR_MAP: Record<string, string> = {
   purple: "#8e44ad", violet: "#9b59b6", gray: "#95a5a6", grey: "#95a5a6",
   brown: "#795548", navy: "#1a237e", gold: "#9a7b4f", silver: "#c0c0c0",
   cream: "#f4f1ec",
+  // Colores usados por los productos garment-dyed de Printful.
+  "washed black": "#323438", "vintage white": "#f9f6f2",
+  "washed navy": "#525f75", "washed pine": "#5b7b6f",
+  "light washed denim": "#dde9f3", "blue jean": "#6b7c8f",
+  "military green": "#59633d", "heather stone": "#b7afa1",
+  "buttermilk": "#fdf7da", "carbon grey": "#5d6365",
   // Reds
   "wine red": "#722f37", "wine": "#722f37",
   "purplish red": "#9b1b30", "rose red": "#c0394b",
@@ -67,7 +73,17 @@ export const COLOR_MAP: Record<string, string> = {
 }
 
 export function colorToCss(name: string): string | null {
-  return COLOR_MAP[name.toLowerCase().trim()] ?? null
+  const normalized = name.toLowerCase().trim().replace(/[-_]/g, " ").replace(/\s+/g, " ")
+  const exact = COLOR_MAP[normalized]
+  if (exact) return exact
+
+  // Printful suele anteponer acabados como "washed" o "heather". No debemos
+  // ocultar una variante real solo porque el proveedor añadió ese prefijo.
+  const semanticColor = Object.keys(COLOR_MAP)
+    .filter((candidate) => candidate.split(" ").length === 1)
+    .find((candidate) => normalized.includes(candidate))
+
+  return semanticColor ? COLOR_MAP[semanticColor] : null
 }
 
 export function isLightColor(hex: string): boolean {

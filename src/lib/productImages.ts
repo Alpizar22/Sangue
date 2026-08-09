@@ -7,22 +7,41 @@ interface PrintfulImageVariant {
 const COMMERCIAL_IMAGE_TYPES = new Set(["mockup", "preview"])
 
 export function buildPrintfulColorImages(variants: PrintfulImageVariant[]): Record<string, string> {
-  const colorImages: Record<string, string> = {}
+  const colors: string[] = []
+  const previewsByColor = new Map<string, string[]>()
+  const fallbackByColor = new Map<string, string>()
 
   for (const variant of variants) {
     const color = variant.color?.trim()
     if (!color) continue
 
-    const commercialPreview = variant.files?.find(
-      (file) => COMMERCIAL_IMAGE_TYPES.has(file.type) && file.preview_url?.trim()
-    )?.preview_url?.trim()
+    if (!previewsByColor.has(color)) {
+      colors.push(color)
+      previewsByColor.set(color, [])
+    }
 
-    if (commercialPreview) {
-      colorImages[color] = commercialPreview
-    } else if (!colorImages[color] && variant.product?.image?.trim()) {
-      colorImages[color] = variant.product.image.trim()
+    const previews = previewsByColor.get(color)!
+    for (const file of variant.files ?? []) {
+      const previewUrl = file.preview_url?.trim()
+      if (COMMERCIAL_IMAGE_TYPES.has(file.type) && previewUrl && !previews.includes(previewUrl)) {
+        previews.push(previewUrl)
+      }
+    }
+
+    const fallback = variant.product?.image?.trim()
+    if (fallback && !fallbackByColor.has(color)) {
+      fallbackByColor.set(color, fallback)
     }
   }
 
-  return colorImages
+  return Object.fromEntries(
+    colors.flatMap((color, colorIndex) => {
+      const previews = previewsByColor.get(color) ?? []
+      const image = previews.length > 0
+        ? previews[colorIndex % previews.length]
+        : fallbackByColor.get(color)
+
+      return image ? [[color, image]] : []
+    }),
+  )
 }

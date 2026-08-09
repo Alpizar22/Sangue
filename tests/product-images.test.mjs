@@ -128,6 +128,66 @@ test("agrupa por color y prefiere preview comercial sobre product.image", () => 
   )
 })
 
+test("rota la perspectiva comercial entre colores", () => {
+  assert.deepEqual(
+    buildPrintfulColorImages([
+      {
+        color: "White",
+        files: [
+          { type: "preview", preview_url: "https://example.com/white-front.png" },
+          { type: "mockup", preview_url: "https://example.com/white-side.png" },
+        ],
+      },
+      {
+        color: "Moss",
+        files: [
+          { type: "preview", preview_url: "https://example.com/moss-front.png" },
+          { type: "mockup", preview_url: "https://example.com/moss-side.png" },
+        ],
+      },
+      {
+        color: "Ivory",
+        files: [
+          { type: "preview", preview_url: "https://example.com/ivory-front.png" },
+          { type: "mockup", preview_url: "https://example.com/ivory-side.png" },
+          { type: "mockup", preview_url: "https://example.com/ivory-detail.png" },
+        ],
+      },
+    ]),
+    {
+      White: "https://example.com/white-front.png",
+      Moss: "https://example.com/moss-side.png",
+      Ivory: "https://example.com/ivory-detail.png",
+    },
+  )
+})
+
+test("deduplica perspectivas repetidas por talla antes de rotarlas", () => {
+  assert.deepEqual(
+    buildPrintfulColorImages([
+      {
+        color: "White",
+        files: [{ type: "preview", preview_url: "https://example.com/white-front.png" }],
+      },
+      {
+        color: "White",
+        files: [{ type: "preview", preview_url: "https://example.com/white-front.png" }],
+      },
+      {
+        color: "Moss",
+        files: [
+          { type: "preview", preview_url: "https://example.com/moss-front.png" },
+          { type: "mockup", preview_url: "https://example.com/moss-side.png" },
+        ],
+      },
+    ]),
+    {
+      White: "https://example.com/white-front.png",
+      Moss: "https://example.com/moss-side.png",
+    },
+  )
+})
+
 test("selecciona la imagen explícita del color y usa fallback si falta", () => {
   const product = {
     editorial_images: ["https://example.com/editorial.jpg"],
@@ -171,7 +231,7 @@ test("relaciona variantes de la misma URL de Printful aunque cambien sus paráme
   )
 })
 
-test("la galería mantiene editoriales primero y deduplica imágenes de color", () => {
+test("la galería prioriza una imagen por color y omite miniaturas Printful repetidas", () => {
   assert.deepEqual(
     getProductGalleryImages({
       editorial_images: ["https://example.com/editorial.jpg"],
